@@ -1198,6 +1198,42 @@ object ExtensionPanelScript {
 
             // 启动层级保护：确保 FAB 容器始终在最顶层
             this.startElevationGuard();
+
+            // 软键盘避让：键盘弹出时把面板顶到键盘上方，收起时复位
+            this.setupKeyboardAvoidance();
+        },
+
+        // 软键盘避让。面板是 position:fixed; bottom:0 的底部卡片，WebView 在覆盖模式下
+        // 不会缩小 viewport，键盘会直接盖住面板里的搜索框；收起时若布局没复位还会留白。
+        // 用 window.visualViewport 监听可视区域高度变化：键盘占用的高度 =
+        // 布局视口高 - (可视视口高 + 顶部偏移)，把面板 bottom 抬到键盘之上即可。
+        setupKeyboardAvoidance() {
+            const vv = window.visualViewport;
+            if (!vv) return;
+
+            function currentPanel() {
+                return document.getElementById('wta-ext-main-panel');
+            }
+
+            function apply() {
+                const panel = currentPanel();
+                if (!panel) return;
+                // 键盘高度：布局视口与可视视口的差值(再减去可视视口顶部的滚动偏移)。
+                const keyboard = Math.max(
+                    0,
+                    Math.round(window.innerHeight - vv.height - vv.offsetTop)
+                );
+                // 阈值 80px：过滤掉地址栏伸缩等小幅变化,只在真正弹键盘时才顶起。
+                if (keyboard > 80) {
+                    panel.style.bottom = keyboard + 'px';
+                    panel.style.transition = 'bottom 0.2s ease';
+                } else {
+                    panel.style.bottom = '0px';
+                }
+            }
+
+            vv.addEventListener('resize', apply);
+            vv.addEventListener('scroll', apply);
         },
 
         // 层级保护：确保容器始终在 DOM 最顶层，不被页面动态元素遮挡
@@ -1832,6 +1868,9 @@ object ExtensionPanelScript {
 
             panel.classList.remove('visible');
             overlay.classList.remove('visible');
+
+            // 复位键盘避让产生的内联 bottom,避免下次弹出位置异常 / 留白
+            panel.style.bottom = '0px';
 
             fab.style.display = this.modules.length > 0 ? 'flex' : 'none';
 
