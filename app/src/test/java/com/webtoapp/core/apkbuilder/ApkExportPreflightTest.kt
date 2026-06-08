@@ -70,6 +70,7 @@ class ApkExportPreflightTest {
 
         val config = app.toApkConfig("com.example.frontend", context)
 
+        assertThat(config.htmlUsesFileScheme).isFalse()
         assertThat(config.targetUrl).isEqualTo(
             buildPackagedHtmlShellEntryUrl("com.example.frontend", "index.html")
         )
@@ -105,6 +106,7 @@ class ApkExportPreflightTest {
 
         val config = app.toApkConfig("com.example.frontend", context)
 
+        assertThat(config.htmlUsesFileScheme).isFalse()
         assertThat(config.targetUrl).isEqualTo(
             buildPackagedHtmlShellEntryUrl("com.example.frontend", "main/index.html")
         )

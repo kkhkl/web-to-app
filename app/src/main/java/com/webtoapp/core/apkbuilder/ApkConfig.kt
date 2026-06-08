@@ -379,12 +379,6 @@ data class MetaBlock(
     val darkMode: String = "SYSTEM",
     val language: String = "CHINESE",
     val engineType: String = "SYSTEM_WEBVIEW",
-    /**
-     * HTML/FRONTEND 应用是否以 file:// 方式加载(纯静态、无 Service Worker / PWA / WASM)。
-     * 为 true 时运行时直接 file:// 打开本地页面,不启动本地 HTTP server,也不需要
-     * INTERNET 权限,可完全脱离网络。打包期保守判定:拿不准一律 false(回退到
-     * localhost server + INTERNET)。
-     */
     val htmlUsesFileScheme: Boolean = false,
     val loggingEnabled: Boolean = false
 )

@@ -317,6 +317,7 @@ fun ShellLocalFileWebView(
                             allowUniversalAccessFromFileURLs = true
 
                             mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            mediaPlaybackRequiresUserGesture = false
                         }
 
                         var lastTouchX = 0f

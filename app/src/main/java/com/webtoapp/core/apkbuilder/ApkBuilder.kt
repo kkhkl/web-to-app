@@ -2809,29 +2809,7 @@ private fun WebApp.computeEffectiveTargetUrl(packageName: String, htmlUsesFileSc
 
 @Suppress("UNUSED_PARAMETER")
 private fun WebApp.computeHtmlUsesFileScheme(context: android.content.Context?): Boolean {
-    if (appType != com.webtoapp.data.model.AppType.HTML &&
-        appType != com.webtoapp.data.model.AppType.FRONTEND) {
-        return false
-    }
-    if (context == null) return false
-    if (webViewConfig.enableCrossOriginIsolation) return false
-
-    val sourceDir = resolveHtmlSourceDir(context) ?: return false
-    if (!sourceDir.exists() || !sourceDir.isDirectory) return false
-
-    return !com.webtoapp.core.webview.LocalHttpServer.siteRequiresHttpServer(sourceDir)
-}
-
-private fun WebApp.resolveHtmlSourceDir(context: android.content.Context): java.io.File? {
-    val stored = htmlConfig?.projectId
-        ?.takeIf { it.isNotBlank() }
-        ?.let { java.io.File(context.filesDir, "html_projects/$it") }
-        ?.takeIf { it.exists() && it.isDirectory }
-    if (stored != null) return stored
-    return htmlConfig?.projectDir
-        ?.takeIf { it.isNotBlank() }
-        ?.let { java.io.File(it) }
-        ?.takeIf { it.exists() && it.isDirectory }
+    return false
 }
 
 private fun WebApp.buildEffectiveRuntimePermissions(): ApkRuntimePermissions {

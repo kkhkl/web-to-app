@@ -2203,36 +2203,36 @@ fun WebViewScreen(
 
     val localHttpServer = remember { LocalHttpServer.getInstance(context) }
 
-    val targetUrl = remember(directUrl, webApp, testUrl) {
+    val targetResolution = remember(directUrl, webApp, testUrl) {
         val app = webApp
         when {
 
-            !testUrl.isNullOrBlank() -> normalizeWebUrlForSecurity(testUrl)
-            !directUrl.isNullOrBlank() -> normalizeWebUrlForSecurity(directUrl)
+            !testUrl.isNullOrBlank() -> normalizeWebUrlForSecurity(testUrl) to null
+            !directUrl.isNullOrBlank() -> normalizeWebUrlForSecurity(directUrl) to null
             app?.appType == com.webtoapp.data.model.AppType.WORDPRESS -> {
 
-                "about:blank"
+                "about:blank" to null
             }
             app?.appType == com.webtoapp.data.model.AppType.PHP_APP -> {
 
-                "about:blank"
+                "about:blank" to null
             }
             app?.appType == com.webtoapp.data.model.AppType.PYTHON_APP -> {
 
-                "about:blank"
+                "about:blank" to null
             }
             app?.appType == com.webtoapp.data.model.AppType.NODEJS_APP -> {
 
-                "about:blank"
+                "about:blank" to null
             }
             app?.appType == com.webtoapp.data.model.AppType.GO_APP -> {
 
-                "about:blank"
+                "about:blank" to null
             }
             app?.appType == com.webtoapp.data.model.AppType.MULTI_WEB -> {
 
                 val firstSite = app.multiWebConfig?.sites?.firstOrNull { it.enabled && (it.url.isNotBlank() || it.localFilePath.isNotBlank()) }
-                firstSite?.getEffectiveUrl() ?: "about:blank"
+                (firstSite?.getEffectiveUrl() ?: "about:blank") to null
             }
             app?.appType == com.webtoapp.data.model.AppType.HTML ||
             app?.appType == com.webtoapp.data.model.AppType.FRONTEND -> {
@@ -2265,36 +2265,30 @@ fun WebViewScreen(
                 if (htmlDir.exists()) {
                     try {
 
-                        val needsHttp = app.webViewConfig.enableCrossOriginIsolation ||
-                            LocalHttpServer.siteRequiresHttpServer(htmlDir)
-                        if (!needsHttp) {
-                            localHttpServer.stop()
-                            val fileUrl = "file://${htmlDir.absolutePath}/$entryFile"
-                            AppLogger.d("WebViewActivity", "Target URL (file://): $fileUrl (pure-static, offline)")
-                            fileUrl
-                        } else {
-                            val enableLocalIsolation = app.webViewConfig.enableCrossOriginIsolation ||
-                                LocalHttpServer.shouldEnableCrossOriginIsolation(htmlDir)
-                            val baseUrl = localHttpServer.start(
-                                htmlDir,
-                                enableCrossOriginIsolation = enableLocalIsolation
-                            )
-                            val targetUrl = "$baseUrl/$entryFile"
-                            AppLogger.d("WebViewActivity", "Target URL: $targetUrl, crossOriginIsolation=$enableLocalIsolation")
-                            targetUrl
-                        }
+                        val enableLocalIsolation = app.webViewConfig.enableCrossOriginIsolation ||
+                            LocalHttpServer.shouldEnableCrossOriginIsolation(htmlDir)
+                        val baseUrl = localHttpServer.start(
+                            htmlDir,
+                            enableCrossOriginIsolation = enableLocalIsolation
+                        )
+                        val targetUrl = "$baseUrl/${Uri.encode(entryFile.removePrefix("/").ifBlank { "index.html" }, "/")}"
+                        AppLogger.d("WebViewActivity", "Target URL: $targetUrl, crossOriginIsolation=$enableLocalIsolation")
+                        targetUrl to null
                     } catch (e: Exception) {
                         AppLogger.e("WebViewActivity", "Failed to start local server", e)
-
-                        "file://${htmlDir.absolutePath}/$entryFile"
+                        "" to (e.message ?: Strings.serverStartFailed)
                     }
                 } else {
                     AppLogger.w("WebViewActivity", "HTML project directory does not exist: ${htmlDir.absolutePath}")
-                    ""
+                    "" to null
                 }
             }
-            else -> normalizeWebUrlForSecurity(app?.url)
+            else -> normalizeWebUrlForSecurity(app?.url) to null
         }
+    }
+    val targetUrl = targetResolution.first
+    LaunchedEffect(targetResolution.second) {
+        targetResolution.second?.let { errorMessage = it }
     }
 
     DisposableEffect(Unit) {
@@ -2676,7 +2670,8 @@ fun WebViewScreen(
                                     }
 
                                     val currentApp = webApp
-                                    if (currentApp?.appType == com.webtoapp.data.model.AppType.HTML) {
+                                    if (currentApp?.appType == com.webtoapp.data.model.AppType.HTML ||
+                                        currentApp?.appType == com.webtoapp.data.model.AppType.FRONTEND) {
                                         settings.apply {
                                             allowFileAccess = true
                                             allowContentAccess = true
@@ -2686,6 +2681,7 @@ fun WebViewScreen(
                                             allowUniversalAccessFromFileURLs = true
                                             javaScriptEnabled = currentApp.htmlConfig?.enableJavaScript ?: true
                                             domStorageEnabled = currentApp.htmlConfig?.enableLocalStorage ?: true
+                                            mediaPlaybackRequiresUserGesture = false
                                         }
                                     }
 

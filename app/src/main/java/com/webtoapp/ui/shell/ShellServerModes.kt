@@ -310,7 +310,7 @@ fun HtmlFrontendShellMode(
                     targetUrl = android.net.Uri.fromFile(entryFileObj).toString()
                     AppLogger.i(
                         "HtmlShell",
-                        "HTML Shell ready (file://): url=$targetUrl, entry=$resolvedEntry (packaged as pure-static, running offline without local server)"
+                        "HTML Shell ready (file:// compatibility mode): url=$targetUrl, entry=$resolvedEntry"
                     )
                 }
                 phase = "ready"
