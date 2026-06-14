@@ -183,16 +183,6 @@ object PlayPolicyChecker {
             )
         }
 
-        violations.add(
-            Violation(
-                ruleId = "TARGET_SDK_REWRITE",
-                severity = Severity.INFO,
-                featurePath = "rule.targetSdkRewrite.path",
-                policyArea = "rule.targetSdkRewrite.area",
-                fixHint = "rule.targetSdkRewrite.fix"
-            )
-        )
-
         return Report(
             appId = webApp.id,
             appName = webApp.name,
@@ -284,9 +274,6 @@ object PlayPolicyChecker {
             )
             "SERVER_RUNTIME_APP_TYPE" -> ResolvedViolation(
                 v.severity, s.rulePathServerRuntime, s.ruleAreaServerRuntime, s.ruleFixServerRuntime
-            )
-            "TARGET_SDK_REWRITE" -> ResolvedViolation(
-                v.severity, s.rulePathTargetSdkRewrite, s.ruleAreaTargetSdkRewrite, s.ruleFixTargetSdkRewrite
             )
             else -> ResolvedViolation(
                 v.severity, v.featurePath, v.policyArea, v.fixHint

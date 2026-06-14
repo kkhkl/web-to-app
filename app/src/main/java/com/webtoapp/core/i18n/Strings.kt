@@ -36067,21 +36067,6 @@ object Strings {
         AppLanguage.ARABIC -> "يعتمد نوع التطبيق هذا على fork+exec للملفات الثنائية ELF داخل دليل بيانات التطبيق (PHP/Node/Python/Go، PHP المضمن في WordPress). يتطلب Play الآن targetSdk ≥ 35، لكن SELinux في Android 10+ يحظر ذلك — لن يتمكن المستخدمون من تشغيل التطبيق بعد التثبيت. غيّر نوع التطبيق إلى أحد الأنواع الأمامية الخالصة (Website / HTML / React / Vue / Image / Video / Gallery / Multi-Web) قبل التفكير في النشر على Play."
     }
 
-    val rulePathTargetSdkRewrite: String get() = when (lang) {
-        AppLanguage.CHINESE -> "AAB 导出 → manifest 改写"
-        AppLanguage.ENGLISH -> "AAB Export → Manifest Rewrite"
-        AppLanguage.ARABIC -> "تصدير AAB ← إعادة كتابة Manifest"
-    }
-    val ruleAreaTargetSdkRewrite: String get() = when (lang) {
-        AppLanguage.CHINESE -> "Play targetSdk 政策"
-        AppLanguage.ENGLISH -> "Play targetSdk Policy"
-        AppLanguage.ARABIC -> "سياسة targetSdk في Play"
-    }
-    val ruleFixTargetSdkRewrite: String get() = when (lang) {
-        AppLanguage.CHINESE -> "导出 AAB 时会自动把 manifest 的 targetSdkVersion 改写为 35（满足 Play 当前要求），minSdkVersion 保持 23。本机安装的 APK 不受影响（仍是 targetSdk=28，本地运行时正常）。"
-        AppLanguage.ENGLISH -> "When exporting an AAB, manifest targetSdkVersion is automatically rewritten to 35 (Play's current requirement). minSdkVersion stays at 23. The locally installed APK is unaffected (still targetSdk=28, local runtimes keep working)."
-        AppLanguage.ARABIC -> "عند تصدير AAB، تتم إعادة كتابة targetSdkVersion في manifest تلقائيًا إلى 35 (الحد الأدنى الحالي لـ Play). يظل minSdkVersion عند 23. لا يتأثر APK المثبت محليًا (يبقى targetSdk=28، وتستمر أوقات التشغيل المحلية في العمل)."
-    }
 
     val apkExportPreflightTitle: String get() = when (lang) {
         AppLanguage.CHINESE -> "导出前检查"
