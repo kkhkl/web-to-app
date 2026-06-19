@@ -491,11 +491,6 @@ private fun SimpleDialog(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = currentStyleDesc(style),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Filled.Close, contentDescription = Strings.close, tint = styleBodyColor(style))
@@ -617,11 +612,6 @@ private fun DarkDialog(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
-                    )
-                    Text(
-                        text = currentStyleDesc(style),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
                 IconButton(onClick = onDismiss) {
