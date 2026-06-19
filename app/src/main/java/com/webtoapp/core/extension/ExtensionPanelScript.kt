@@ -1382,24 +1382,37 @@ object ExtensionPanelScript {
                 var target = e.target && e.target.closest ? e.target.closest('[data-wta-action]') : null;
                 if (!target) return;
                 var action = target.getAttribute('data-wta-action');
-                if (!action || action === 'search') return; // search 走 input 事件
+                if (!action || action === 'search') return;
                 var arg = target.getAttribute('data-wta-arg');
-                if (typeof self[action] !== 'function') return;
-                e.preventDefault();
-                e.stopPropagation();
-                try {
-                    if (arg !== null) self[action](arg);
-                    else self[action]();
-                } catch (err) {
-                    console.error('[WTA Panel] action "' + action + '" failed:', err);
+                if (typeof self[action] === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try {
+                        if (arg !== null) self[action](arg);
+                        else self[action]();
+                    } catch (err) {
+                        console.error('[WTA Panel] action "' + action + '" failed:', err);
+                    }
+                    return;
+                }
+                var modActionFn = window['__wta_module_action_' + action];
+                if (typeof modActionFn === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    try { modActionFn(arg); } catch (err) {
+                        console.error('[WTA Module] action "' + action + '" failed:', err);
+                    }
                 }
             }, true);
 
-            // 输入类操作（搜索框）
+            // 输入类操作（搜索框 + 模块级输入动作）
             root.addEventListener('input', function(e) {
-                var target = e.target && e.target.closest ? e.target.closest('[data-wta-action="search"]') : null;
+                var target = e.target && e.target.closest ? e.target.closest('[data-wta-action]') : null;
                 if (!target) return;
-                self.searchModules(target.value);
+                var action = target.getAttribute('data-wta-action');
+                if (action === 'search') { self.searchModules(target.value); return; }
+                var modInputFn = window['__wta_module_action_' + action];
+                if (typeof modInputFn === 'function') { modInputFn(target.value); }
             }, true);
         },
 
@@ -1665,10 +1678,11 @@ object ExtensionPanelScript {
 
             // 填充内容
             const contentEl = document.getElementById(`wta-modwin-content-${"$"}{moduleId}`);
-            if (contentEl && module.onAction) {
-                module.onAction(contentEl);
-            } else if (contentEl && module.panelHtml) {
+            if (contentEl && module.panelHtml) {
                 contentEl.innerHTML = module.panelHtml;
+                if (module.onAction) module.onAction(contentEl);
+            } else if (contentEl && module.onAction) {
+                module.onAction(contentEl);
             } else if (contentEl) {
                 contentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--wta-on-surface-variant);font-size:14px">' + (T.noDescription || '') + '</div>';
             }
@@ -2023,6 +2037,10 @@ object ExtensionPanelScript {
                     content.innerHTML = detailHTML + launchBtnHtml + '<div class="wta-detail-section">' +
                         '<div class="wta-detail-section-title">' + T.quickActions + '</div>' +
                         module.panelHtml + '</div>';
+                    if (module.onAction) {
+                        var qActionEl = content.querySelector('.wta-detail-section:last-child > div:last-child');
+                        if (qActionEl) module.onAction(qActionEl);
+                    }
                 } else if (module.onAction) {
                     content.innerHTML = detailHTML + launchBtnHtml + '<div class="wta-detail-section">' +
                         '<div class="wta-detail-section-title">' + T.quickActions + '</div>' +

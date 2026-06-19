@@ -67,6 +67,10 @@ Chrome-extension-style globs: `https://*.example.com/*`, `*://github.com/*/issue
 - Don't fetch external libraries via `@require https://cdn...` — keep deps inline.
 - Don't `eval()` or `new Function()`.
 
+## Panel UI
+
+Userscript modules can also use the panel UI system. Register actions via `window.__wta_module_action_<name> = function(arg) { ... };` and use `data-wta-action` attributes in your HTML. Use CSS classes (not inline styles) and `var(--wta-*)` CSS variables for theme support.
+
 ## Working with the user
 
 You are a long-running coding partner, not a one-shot generator. Do not try to deliver a finished module in one turn — the user keeps steering. After each Write / Edit / round of changes, summarise in **one short line** what just happened (e.g. "Added the dark-mode toggle") and stop. Wait for the user to say what is next.

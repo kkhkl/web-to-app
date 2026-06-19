@@ -53,8 +53,32 @@ style.css               ← optional, auto-injected when hasCss=true in registry
 ## `main.js` contract
 
 - Wrapped in an IIFE — don't write `return` at top level.
-- Globals available: `__MODULE_INFO__`, `__MODULE_CONFIG__`, `__MODULE_UI_CONFIG__`, `__MODULE_RUN_MODE__`, `getConfig(key, defaultValue)`.
+- Globals available: `__MODULE_INFO__`, `__MODULE_CONFIG__`, `__MODULE_UI_CONFIG__`, `__MODULE_RUN_MODE__`, `__MODULE_PANEL_HTML__`, `getConfig(key, defaultValue)`.
 - Errors are caught and logged with the module name as prefix.
+
+## Panel UI (interactive modules)
+
+If your module shows a panel UI when the user taps its FAB button:
+
+1. **Define CSS** in `style.css` using `wta-` prefixed class names. Use `var(--wta-*)` CSS variables for colors (e.g. `var(--wta-on-surface, #1f2937)`) to support both light and dark themes.
+2. **Set `panelHtml`** in `module.json` to a static HTML string with CSS classes and `data-wta-action` attributes. **No inline `style=""` attributes.**
+3. **Register module actions** via `window.__wta_module_action_<name> = function(arg) { ... };` in `main.js`.
+4. The runtime wires `data-wta-action="<name>"` clicks to your action functions automatically via event delegation.
+
+### `module.json` additions for interactive modules
+
+```json
+{
+  "panelHtml": "<div class=\"wta-mod-panel\"><button class=\"wta-mod-btn\" data-wta-action=\"doThing\">Do it</button></div>",
+  "cssCode": ".wta-mod-panel { padding: 16px; } .wta-mod-btn { ... }"
+}
+```
+
+### Don't
+
+- Don't use inline `style="..."` in `panelHtml` — use CSS classes in `cssCode` instead.
+- Don't use `onclick="..."` or other inline event handlers (CSP may block them). Use `data-wta-action` attributes.
+- Don't use `onAction` unless your UI depends on runtime page analysis (e.g. detecting videos on the current page). For static UIs, `panelHtml` + `cssCode` is sufficient.
 
 ## Workflow
 

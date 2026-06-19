@@ -475,6 +475,8 @@ data class ExtensionModule(
     val code: String = "",
     @SerializedName("cssCode")
     val cssCode: String = "",
+    @SerializedName("panelHtml")
+    val panelHtml: String = "",
 
     @SerializedName("codeFiles")
     val codeFiles: Map<String, String> = emptyMap(),
@@ -713,6 +715,7 @@ data class ExtensionModule(
                     uiConfig: __MODULE_UI_CONFIG__,
                     runMode: __MODULE_RUN_MODE__
                 };
+                ${if (panelHtml.isNotBlank()) "const __MODULE_PANEL_HTML__ = `${panelHtml.escapeForJsTemplate()}`;" else "const __MODULE_PANEL_HTML__ = '';"}
 
                 // Configure访问函数
                 function getConfig(key, defaultValue) {
@@ -750,21 +753,20 @@ data class ExtensionModule(
                         setTimeout(__autoRegister__, 100);
                         return;
                     }
-                    // 检查用户代码是否已经注册过（带 uiConfig.type 或 onAction 均视为有效注册）
+                    // 检查用户代码是否已经注册过（带 uiConfig.type、onAction 或 panelHtml 均视为有效注册）
                     if (panel.modules) {
                         var existing = panel.modules.find(function(m) { return m.id === __MODULE_INFO__.id; });
-                        if (existing && ((existing.uiConfig && existing.uiConfig.type) || existing.onAction)) {
-                            // 用户代码已注册且包含 uiConfig 或 onAction，跳过自动注册
+                        if (existing && ((existing.uiConfig && existing.uiConfig.type) || existing.onAction || existing.panelHtml)) {
                             return;
                         }
                     }
-                    // 用户代码未注册或未传递 uiConfig，补充注册
                     __WTA_MODULE_UI__.register({
                         id: __MODULE_INFO__.id,
                         name: __MODULE_INFO__.name,
                         icon: __MODULE_INFO__.icon,
                         uiConfig: __MODULE_UI_CONFIG__,
-                        runMode: __MODULE_RUN_MODE__
+                        runMode: __MODULE_RUN_MODE__,
+                        panelHtml: __MODULE_PANEL_HTML__ || undefined
                     });
                 })();
                 """ else ""}

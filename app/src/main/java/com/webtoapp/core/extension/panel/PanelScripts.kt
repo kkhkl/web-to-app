@@ -2514,10 +2514,11 @@ object PanelScripts {
 
             // 填充内容
             const contentEl = document.getElementById(`wta-modwin-content-${"$"}{moduleId}`);
-            if (contentEl && module.onAction) {
-                module.onAction(contentEl);
-            } else if (contentEl && module.panelHtml) {
+            if (contentEl && module.panelHtml) {
                 contentEl.innerHTML = module.panelHtml;
+                if (module.onAction) module.onAction(contentEl);
+            } else if (contentEl && module.onAction) {
+                module.onAction(contentEl);
             } else if (contentEl) {
                 contentEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--wta-on-surface-variant);font-size:14px">' + (T.noDescription || '') + '</div>';
             }
@@ -3002,6 +3003,10 @@ object PanelScripts {
                     content.innerHTML = detailHTML + launchBtnHtml + '<div class="wta-detail-section">' +
                         '<div class="wta-detail-section-title">' + T.quickActions + '</div>' +
                         module.panelHtml + '</div>';
+                    if (module.onAction) {
+                        var qActionEl = content.querySelector('.wta-detail-section:last-child > div:last-child');
+                        if (qActionEl) module.onAction(qActionEl);
+                    }
                 } else if (module.onAction) {
                     content.innerHTML = detailHTML + launchBtnHtml + '<div class="wta-detail-section">' +
                         '<div class="wta-detail-section-title">' + T.quickActions + '</div>' +

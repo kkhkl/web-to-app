@@ -28,6 +28,7 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_IDLE,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.DOWNLOAD),
+        cssCode = MEDIA_DOWNLOADER_CSS,
         code = MEDIA_DOWNLOADER_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -45,6 +46,7 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_IDLE,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.MEDIA),
+        cssCode = VIDEO_ENHANCER_CSS,
         code = VIDEO_ENHANCER_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -62,6 +64,7 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_IDLE,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.NETWORK),
+        cssCode = WEB_ANALYZER_CSS,
         code = WEB_ANALYZER_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -79,6 +82,8 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_IDLE,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.NAVIGATION),
+        panelHtml = FIND_IN_PAGE_PANEL_HTML,
+        cssCode = FIND_IN_PAGE_CSS,
         code = FIND_IN_PAGE_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -96,6 +101,8 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_START,
         permissions = listOf(ModulePermission.CSS_INJECT, ModulePermission.STORAGE),
+        panelHtml = DARK_MODE_PANEL_HTML,
+        cssCode = DARK_MODE_CSS,
         code = DARK_MODE_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -113,6 +120,8 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_START,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.STORAGE),
+        panelHtml = PRIVACY_PANEL_HTML,
+        cssCode = PRIVACY_CSS,
         code = PRIVACY_PROTECTION_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -130,6 +139,8 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_IDLE,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.STORAGE),
+        panelHtml = ELEMENT_BLOCKER_PANEL_HTML,
+        cssCode = ELEMENT_BLOCKER_CSS,
         code = ELEMENT_BLOCKER_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
@@ -147,9 +158,26 @@ object BuiltInModules {
         enabled = false,
         runAt = ModuleRunTime.DOCUMENT_END,
         permissions = listOf(ModulePermission.DOM_ACCESS, ModulePermission.CLIPBOARD),
+        panelHtml = CONTENT_ENHANCER_PANEL_HTML,
+        cssCode = CONTENT_ENHANCER_CSS,
         code = CONTENT_ENHANCER_CODE,
         runMode = ModuleRunMode.INTERACTIVE,
     )
+
+    private const val MEDIA_DOWNLOADER_CSS = """.wta-media-panel{padding:4px}
+.wta-media-header{margin-bottom:16px}
+.wta-media-title{font-size:15px;font-weight:600;color:var(--wta-on-surface,#1f2937);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wta-media-subtitle{font-size:13px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-media-btn{width:100%;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;color:#fff;transition:opacity .2s}
+.wta-media-btn:active{opacity:.8}
+.wta-media-tip{margin-top:16px;padding:12px;background:var(--wta-surface-dim,#fef3f6);border-radius:8px;font-size:12px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-media-empty{text-align:center;padding:40px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-media-empty-icon{font-size:48px;margin-bottom:16px}
+.wta-media-list{max-height:200px;overflow-y:auto}
+.wta-media-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--wta-surface-dim,#f9fafb);border-radius:8px;margin-bottom:8px}
+.wta-media-item-icon{font-size:20px}
+.wta-media-item-info{flex:1;font-size:13px;color:var(--wta-on-surface-variant,#4b5563);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wta-media-item-btn{background:var(--wta-surface-dim,#f3f4f6);border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--wta-on-surface,#374151)}"""
 
     private const val MEDIA_DOWNLOADER_CODE = """
 (function() {
@@ -477,18 +505,18 @@ object BuiltInModules {
             const info = getBilibiliInfo();
             const title = document.querySelector('h1.video-title, .video-title')?.textContent || T.video;
             if (!info?.video && !info?.audio) return noMediaPanel('📺');
-            let html = '<div style="margin-bottom:20px"><div style="font-size:15px;font-weight:600;color:#1f2937;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(title) + '</div><div style="font-size:13px;color:#fb7299">' + T.quality + ': ' + info.quality + '</div></div>';
-            if (info.video) html += '<button onclick="__wtaMediaDL(\'bili_video\')" style="width:100%;background:linear-gradient(135deg,#fb7299,#fc9db8);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px"><span>⬇️</span> ' + T.dlVideo + '</button>';
-            if (info.audio) html += '<button onclick="__wtaMediaDL(\'bili_audio\')" style="width:100%;background:linear-gradient(135deg,#23ade5,#5bc0de);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎵</span> ' + T.dlAudio + '</button>';
-            html += '<div style="margin-top:16px;padding:12px;background:#fef3f6;border-radius:8px;font-size:12px;color:#9ca3af">' + T.bilibiliTip + '</div>';
+            let html = '<div class="wta-media-header"><div class="wta-media-title">' + escapeHtml(title) + '</div><div class="wta-media-subtitle" style="color:#fb7299">' + T.quality + ': ' + info.quality + '</div></div>';
+            if (info.video) html += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#fb7299,#fc9db8)" data-wta-action="mediaDL" data-wta-arg="bili_video"><span>⬇️</span> ' + T.dlVideo + '</button>';
+            if (info.audio) html += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#23ade5,#5bc0de)" data-wta-action="mediaDL" data-wta-arg="bili_audio"><span>🎵</span> ' + T.dlAudio + '</button>';
+            html += '<div class="wta-media-tip">' + T.bilibiliTip + '</div>';
             return html;
         }
 
         if (platform === 'douyin') {
             const data = getDouyinVideoData();
             if (!data?.url) return noMediaPanel('🎵');
-            var douyinHtml = '<div style="margin-bottom:20px"><div style="font-size:15px;font-weight:600;color:#1f2937;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + escapeHtml(data.desc || T.video) + '</div><div style="font-size:13px;color:#9ca3af">@' + escapeHtml(data.author) + '</div></div><button onclick="__wtaMediaDL(\'douyin\')" style="width:100%;background:linear-gradient(135deg,#fe2c55,#ff6b81);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px"><span>⬇️</span> ' + T.dlNoWm + '</button>';
-            if (getDouyinAudio()) douyinHtml += '<button onclick="__wtaMediaDL(\'audio\')" style="width:100%;background:linear-gradient(135deg,#23ade5,#5bc0de);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎵</span> ' + T.dlMusic + '</button>';
+            var douyinHtml = '<div class="wta-media-header"><div class="wta-media-title">' + escapeHtml(data.desc || T.video) + '</div><div class="wta-media-subtitle">@' + escapeHtml(data.author) + '</div></div><button class="wta-media-btn" style="background:linear-gradient(135deg,#fe2c55,#ff6b81)" data-wta-action="mediaDL" data-wta-arg="douyin"><span>⬇️</span> ' + T.dlNoWm + '</button>';
+            if (getDouyinAudio()) douyinHtml += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#23ade5,#5bc0de)" data-wta-action="mediaDL" data-wta-arg="audio"><span>🎵</span> ' + T.dlMusic + '</button>';
             return douyinHtml;
         }
 
@@ -497,12 +525,12 @@ object BuiltInModules {
             if (!mediaList.length) return noMediaPanel('📕');
             const images = mediaList.filter(m => m.type === 'image');
             const videos = mediaList.filter(m => m.type === 'video');
-            let html = '<div style="color:#6b7280;font-size:13px;margin-bottom:16px">' + T.detected2.replace('{0}', images.length).replace('{1}', videos.length) + '</div>';
-            if (images.length) html += '<button onclick="__wtaMediaDL(\'xhs_all_image\')" style="width:100%;background:linear-gradient(135deg,#ff2442,#ff6b7a);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px"><span>🖼️</span> ' + T.dlAllImg + ' (' + images.length + ')</button>';
-            if (videos.length) html += '<button onclick="__wtaMediaDL(\'xhs_all_video\')" style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎬</span> ' + T.dlAllVid + ' (' + videos.length + ')</button>';
-            html += '<div style="margin-top:8px;max-height:200px;overflow-y:auto">';
-            mediaList.forEach((m, i) => {
-                html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f9fafb;border-radius:8px;margin-bottom:8px"><span style="font-size:20px">' + (m.type === 'image' ? '🖼️' : '🎬') + '</span><div style="flex:1;font-size:13px;color:#4b5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.type === 'image' ? T.image : T.video) + ' ' + (i+1) + '</div><button onclick="__wtaMediaDL(\'xhs_' + i + '\')" style="background:#f3f4f6;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">' + T.download + '</button></div>';
+            let html = '<div class="wta-media-subtitle" style="margin-bottom:16px">' + T.detected2.replace('{0}', images.length).replace('{1}', videos.length) + '</div>';
+            if (images.length) html += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#ff2442,#ff6b7a)" data-wta-action="mediaDL" data-wta-arg="xhs_all_image"><span>🖼️</span> ' + T.dlAllImg + ' (' + images.length + ')</button>';
+            if (videos.length) html += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#667eea,#764ba2)" data-wta-action="mediaDL" data-wta-arg="xhs_all_video"><span>🎬</span> ' + T.dlAllVid + ' (' + videos.length + ')</button>';
+            html += '<div class="wta-media-list">';
+            mediaList.forEach(function(m, i) {
+                html += '<div class="wta-media-item"><span class="wta-media-item-icon">' + (m.type === 'image' ? '🖼️' : '🎬') + '</span><div class="wta-media-item-info">' + (m.type === 'image' ? T.image : T.video) + ' ' + (i+1) + '</div><button class="wta-media-item-btn" data-wta-action="mediaDL" data-wta-arg="xhs_' + i + '">' + T.download + '</button></div>';
             });
             html += '</div>';
             return html;
@@ -512,7 +540,7 @@ object BuiltInModules {
             getInstagramMedia();
             if (!mediaList.length) return noMediaPanel('📷');
             var igHtml = renderMediaListPanel('#E1306C', '📷');
-            if (getInstagramAudio()) igHtml += '<button onclick="__wtaMediaDL(\'audio\')" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#23ade5,#5bc0de);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎵</span> ' + T.dlAudio + '</button>';
+            if (getInstagramAudio()) igHtml += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#23ade5,#5bc0de);margin-top:8px" data-wta-action="mediaDL" data-wta-arg="audio"><span>🎵</span> ' + T.dlAudio + '</button>';
             return igHtml;
         }
 
@@ -526,33 +554,33 @@ object BuiltInModules {
             getTikTokMedia();
             if (!mediaList.length) return noMediaPanel('🎵');
             var tiktokHtml = renderMediaListPanel('#000000', '🎵');
-            if (getTikTokAudio()) tiktokHtml += '<button onclick="__wtaMediaDL(\'audio\')" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#23ade5,#5bc0de);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎵</span> ' + T.dlMusic + '</button>';
+            if (getTikTokAudio()) tiktokHtml += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#23ade5,#5bc0de);margin-top:8px" data-wta-action="mediaDL" data-wta-arg="audio"><span>🎵</span> ' + T.dlMusic + '</button>';
             return tiktokHtml;
         }
 
         detectGenericVideos();
         if (!mediaList.length) return noMediaPanel('🎬');
-        let html = '<div style="color:#6b7280;font-size:13px;margin-bottom:16px">' + T.detected.replace('{0}', mediaList.length) + '</div>';
-        mediaList.forEach((v, i) => {
-            html += '<div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px"><div style="width:48px;height:48px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px">🎬</div><div style="flex:1"><div style="font-weight:600;color:#1f2937">' + T.video + ' ' + (i+1) + '</div><div style="font-size:12px;color:#9ca3af">' + (v.w || '?') + 'x' + (v.h || '?') + ' · ' + (v.blob ? T.blob : 'MP4') + '</div></div><button onclick="__wtaMediaDL(\'generic_' + i + '\')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer">' + T.download + '</button></div>';
+        let html = '<div class="wta-media-subtitle" style="margin-bottom:16px">' + T.detected.replace('{0}', mediaList.length) + '</div>';
+        mediaList.forEach(function(v, i) {
+            html += '<div class="wta-media-item" style="padding:16px;border-radius:12px"><div style="width:48px;height:48px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px">🎬</div><div style="flex:1"><div style="font-weight:600;color:var(--wta-on-surface,#1f2937)">' + T.video + ' ' + (i+1) + '</div><div class="wta-media-subtitle">' + (v.w || '?') + 'x' + (v.h || '?') + ' · ' + (v.blob ? T.blob : 'MP4') + '</div></div><button class="wta-media-item-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:10px 20px;border-radius:8px" data-wta-action="mediaDL" data-wta-arg="generic_' + i + '">' + T.download + '</button></div>';
         });
         if (getGenericAudio()) {
-            html += '<button onclick="__wtaMediaDL(\'audio\')" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#23ade5,#5bc0de);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span>🎵</span> ' + T.audio + ' ' + T.download + '</button>';
+            html += '<button class="wta-media-btn" style="background:linear-gradient(135deg,#23ade5,#5bc0de);margin-top:8px" data-wta-action="mediaDL" data-wta-arg="audio"><span>🎵</span> ' + T.audio + ' ' + T.download + '</button>';
         }
         return html;
     }
 
     function noMediaPanel(icon) {
-        return '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:48px;margin-bottom:16px">' + icon + '</div><div>' + T.noMedia + '</div></div>';
+        return '<div class="wta-media-empty"><div class="wta-media-empty-icon">' + icon + '</div><div>' + T.noMedia + '</div></div>';
     }
 
     function renderMediaListPanel(color, icon) {
-        var html = '<div style="color:#6b7280;font-size:13px;margin-bottom:16px">' + T.detected.replace('{0}', mediaList.length) + '</div>';
-        mediaList.forEach((m, i) => {
-            html += '<div style="background:#f9fafb;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">' +
+        var html = '<div class="wta-media-subtitle" style="margin-bottom:16px">' + T.detected.replace('{0}', mediaList.length) + '</div>';
+        mediaList.forEach(function(m, i) {
+            html += '<div class="wta-media-item" style="padding:16px;border-radius:12px">' +
                 '<div style="width:48px;height:48px;background:linear-gradient(135deg,' + color + ',' + color + '99);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px">' + (m.type === 'image' ? '🖼️' : icon) + '</div>' +
-                '<div style="flex:1"><div style="font-weight:600;color:#1f2937">' + (m.type === 'image' ? T.image : T.video) + ' ' + (i+1) + '</div></div>' +
-                '<button onclick="__wtaMediaDL(\'list_' + i + '\')" style="background:linear-gradient(135deg,' + color + ',' + color + '99);color:white;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer">' + T.download + '</button></div>';
+                '<div style="flex:1"><div style="font-weight:600;color:var(--wta-on-surface,#1f2937)">' + (m.type === 'image' ? T.image : T.video) + ' ' + (i+1) + '</div></div>' +
+                '<button class="wta-media-item-btn" style="background:linear-gradient(135deg,' + color + ',' + color + '99);color:#fff;padding:10px 20px;border-radius:8px" data-wta-action="mediaDL" data-wta-arg="list_' + i + '">' + T.download + '</button></div>';
         });
         return html;
     }
@@ -563,7 +591,7 @@ object BuiltInModules {
         });
     }
 
-    window.__wtaMediaDL = function(action) {
+    window.__wta_module_action_mediaDL = function(action) {
         const platform = getPlatform();
 
         if (action.startsWith('bili_')) {
@@ -651,6 +679,19 @@ object BuiltInModules {
 })();
 """
 
+    private const val VIDEO_ENHANCER_CSS = """.wta-video-panel{padding:4px}
+.wta-video-empty{text-align:center;padding:40px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-video-empty-icon{font-size:48px;margin-bottom:16px}
+.wta-video-section{margin-bottom:16px}
+.wta-video-section-title{font-size:14px;color:var(--wta-on-surface-variant,#6b7280);margin-bottom:12px}
+.wta-video-speed-grid{display:flex;flex-wrap:wrap;gap:8px}
+.wta-video-speed-btn{padding:10px 16px;border-radius:10px;border:1px solid var(--wta-outline,#e5e7eb);background:var(--wta-surface-dim,#f9fafb);font-size:14px;cursor:pointer;color:var(--wta-on-surface,#374151);transition:all .2s}
+.wta-video-speed-btn:active{background:var(--wta-accent-soft,rgba(99,102,241,.1))}
+.wta-video-feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wta-video-feature-btn{padding:14px;border-radius:12px;border:none;background:var(--wta-surface-dim,#f3f4f6);font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--wta-on-surface,#374151);transition:all .2s}
+.wta-video-feature-btn:active{background:var(--wta-accent-soft,rgba(99,102,241,.1))}
+.wta-video-feature-icon{font-size:20px}"""
+
     private const val VIDEO_ENHANCER_CODE = """
 (function() {
     'use strict';
@@ -685,26 +726,27 @@ object BuiltInModules {
 
     function getPanelHtml() {
         const v = getVideo();
-        if (!v) return '<div style="text-align:center;padding:40px;color:#9ca3af"><div style="font-size:48px;margin-bottom:16px">🎬</div><div>' + T.noVideo + '</div></div>';
+        if (!v) return '<div class="wta-video-empty"><div class="wta-video-empty-icon">🎬</div><div>' + T.noVideo + '</div></div>';
 
-        return '<div style="margin-bottom:20px"><div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.speed + '</div>' +
-            '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-            speeds.map(s => '<button onclick="__wtaSetSpeed(' + s + ')" style="flex:1;min-width:60px;padding:12px 8px;border-radius:8px;border:none;font-size:14px;cursor:pointer;' +
-                (currentSpeed === s ? 'background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:white' : 'background:#f3f4f6;color:#374151') + '">' + s + 'x</button>').join('') +
+        return '<div class="wta-video-panel">' +
+            '<div class="wta-video-section"><div class="wta-video-section-title">' + T.speed + '</div>' +
+            '<div class="wta-video-speed-grid">' +
+            speeds.map(function(s) { return '<button class="wta-video-speed-btn' + (currentSpeed === s ? ' wta-video-speed-active' : '') + '" data-wta-action="setSpeed" data-wta-arg="' + s + '">' + s + 'x</button>'; }).join('') +
             '</div></div>' +
-            '<div style="margin-bottom:16px"><div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.features + '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-            '<button onclick="__wtaTogglePiP()" style="padding:14px;border-radius:12px;border:none;background:#f3f4f6;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:20px">📺</span>' + T.pip + '</button>' +
-            '<button onclick="__wtaToggleLoop()" style="padding:14px;border-radius:12px;border:none;background:#f3f4f6;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:20px">🔁</span>' + T.loop + '</button>' +
-            '<button onclick="__wtaSkip(-10)" style="padding:14px;border-radius:12px;border:none;background:#f3f4f6;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:20px">⏪</span>' + T.back10 + '</button>' +
-            '<button onclick="__wtaSkip(10)" style="padding:14px;border-radius:12px;border:none;background:#f3f4f6;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:20px">⏩</span>' + T.fwd10 + '</button>' +
-            '</div></div>';
+            '<div class="wta-video-section"><div class="wta-video-section-title">' + T.features + '</div>' +
+            '<div class="wta-video-feature-grid">' +
+            '<button class="wta-video-feature-btn" data-wta-action="togglePiP"><span class="wta-video-feature-icon">📺</span>' + T.pip + '</button>' +
+            '<button class="wta-video-feature-btn" data-wta-action="toggleLoop"><span class="wta-video-feature-icon">🔁</span>' + T.loop + '</button>' +
+            '<button class="wta-video-feature-btn" data-wta-action="skipBack"><span class="wta-video-feature-icon">⏪</span>' + T.back10 + '</button>' +
+            '<button class="wta-video-feature-btn" data-wta-action="skipFwd"><span class="wta-video-feature-icon">⏩</span>' + T.fwd10 + '</button>' +
+            '</div></div></div>';
     }
 
-    window.__wtaSetSpeed = function(s) { setSpeed(s); };
-    window.__wtaTogglePiP = togglePiP;
-    window.__wtaToggleLoop = function() { const v = getVideo(); if (v) { v.loop = !v.loop; __WTA_MODULE_UI__.toast(v.loop ? T.loopOn : T.loopOff); } };
-    window.__wtaSkip = function(s) { const v = getVideo(); if (v) { v.currentTime += s; __WTA_MODULE_UI__.toast((s > 0 ? T.fwd : T.back) + Math.abs(s) + T.sec); } };
+    window.__wta_module_action_setSpeed = function(s) { setSpeed(parseFloat(s)); };
+    window.__wta_module_action_togglePiP = togglePiP;
+    window.__wta_module_action_toggleLoop = function() { var v = getVideo(); if (v) { v.loop = !v.loop; __WTA_MODULE_UI__.toast(v.loop ? T.loopOn : T.loopOff); } };
+    window.__wta_module_action_skipBack = function() { var v = getVideo(); if (v) { v.currentTime -= 10; __WTA_MODULE_UI__.toast(T.back + '10' + T.sec); } };
+    window.__wta_module_action_skipFwd = function() { var v = getVideo(); if (v) { v.currentTime += 10; __WTA_MODULE_UI__.toast(T.fwd + '10' + T.sec); } };
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }
@@ -713,6 +755,22 @@ object BuiltInModules {
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', register) : register();
 })();
 """
+
+    private const val WEB_ANALYZER_CSS = """.wta-analyzer-panel{padding:4px}
+.wta-analyzer-section{margin-bottom:20px}
+.wta-analyzer-section-title{font-size:14px;color:var(--wta-on-surface-variant,#6b7280);margin-bottom:12px}
+.wta-analyzer-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--wta-outline,rgba(0,0,0,.06))}
+.wta-analyzer-label{color:var(--wta-on-surface-variant,#6b7280);font-size:13px}
+.wta-analyzer-value{color:var(--wta-on-surface,#1f2937);font-weight:500;font-size:13px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.wta-analyzer-perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wta-analyzer-perf-card{background:var(--wta-surface-dim,#ecfdf5);padding:12px;border-radius:8px;text-align:center}
+.wta-analyzer-perf-num{font-size:20px;font-weight:600;color:#059669}
+.wta-analyzer-perf-label{font-size:11px;color:var(--wta-on-surface-variant,#6b7280)}
+.wta-analyzer-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wta-analyzer-stat{background:var(--wta-surface-dim,#f9fafb);padding:10px;border-radius:8px;text-align:center}
+.wta-analyzer-stat-icon{font-size:16px}
+.wta-analyzer-stat-num{font-size:16px;font-weight:600;color:var(--wta-on-surface,#1f2937)}
+.wta-analyzer-stat-label{font-size:10px;color:var(--wta-on-surface-variant,#9ca3af)}"""
 
     private const val WEB_ANALYZER_CODE = """
 (function() {
@@ -748,26 +806,21 @@ object BuiltInModules {
         const loadTime = perf.loadEventEnd - perf.navigationStart;
         const domReady = perf.domContentLoadedEventEnd - perf.navigationStart;
 
-        return '<div style="margin-bottom:20px"><div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.pageInfo + '</div>' +
-            '<div style="background:#f9fafb;border-radius:12px;padding:16px">' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-            '<div><div style="font-size:12px;color:#9ca3af">' + T.title + '</div><div style="font-size:13px;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + document.title + '</div></div>' +
-            '<div><div style="font-size:12px;color:#9ca3af">' + T.domain + '</div><div style="font-size:13px;color:#1f2937">' + location.hostname + '</div></div>' +
-            '</div></div></div>' +
-
-            '<div style="margin-bottom:20px"><div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.perf + '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-            '<div style="background:#ecfdf5;padding:12px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:600;color:#059669">' + (loadTime > 0 ? loadTime : '-') + '</div><div style="font-size:11px;color:#6b7280">' + T.loadTime + '</div></div>' +
-            '<div style="background:#eff6ff;padding:12px;border-radius:8px;text-align:center"><div style="font-size:20px;font-weight:600;color:#3b82f6">' + (domReady > 0 ? domReady : '-') + '</div><div style="font-size:11px;color:#6b7280">' + T.domReady + '</div></div>' +
-            '</div></div>' +
-
-            '<div><div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.stats + '</div>' +
-            '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">' +
+        return '<div class="wta-analyzer-panel">' +
+            '<div class="wta-analyzer-section"><div class="wta-analyzer-section-title">' + T.pageInfo + '</div>' +
+            '<div class="wta-analyzer-info-row"><span class="wta-analyzer-label">' + T.title + '</span><span class="wta-analyzer-value">' + (document.title || '-') + '</span></div>' +
+            '<div class="wta-analyzer-info-row"><span class="wta-analyzer-label">' + T.domain + '</span><span class="wta-analyzer-value">' + location.hostname + '</span></div></div>' +
+            '<div class="wta-analyzer-section"><div class="wta-analyzer-section-title">' + T.perf + '</div>' +
+            '<div class="wta-analyzer-perf-grid">' +
+            '<div class="wta-analyzer-perf-card"><div class="wta-analyzer-perf-num">' + (loadTime > 0 ? loadTime : '-') + '</div><div class="wta-analyzer-perf-label">' + T.loadTime + '</div></div>' +
+            '<div class="wta-analyzer-perf-card" style="background:var(--wta-surface-dim,#eff6ff)"><div class="wta-analyzer-perf-num" style="color:#3b82f6">' + (domReady > 0 ? domReady : '-') + '</div><div class="wta-analyzer-perf-label">' + T.domReady + '</div></div></div></div>' +
+            '<div class="wta-analyzer-section"><div class="wta-analyzer-section-title">' + T.stats + '</div>' +
+            '<div class="wta-analyzer-stat-grid">' +
             [['📜', info.scripts, T.scripts], ['🎨', info.styles, T.styles], ['🖼️', info.images, T.images], ['🔗', info.links, T.links],
-             ['📝', info.forms, T.forms], ['📺', info.iframes, T.iframes], ['🎬', info.videos, T.videos]].map(([icon, count, name]) =>
-                '<div style="background:#f9fafb;padding:10px;border-radius:8px;text-align:center"><div style="font-size:16px">' + icon + '</div><div style="font-size:16px;font-weight:600;color:#1f2937">' + count + '</div><div style="font-size:10px;color:#9ca3af">' + name + '</div></div>'
-            ).join('') +
-            '</div></div>';
+             ['📝', info.forms, T.forms], ['📺', info.iframes, T.iframes], ['🎬', info.videos, T.videos]].map(function(s) {
+                return '<div class="wta-analyzer-stat"><div class="wta-analyzer-stat-icon">' + s[0] + '</div><div class="wta-analyzer-stat-num">' + s[1] + '</div><div class="wta-analyzer-stat-label">' + s[2] + '</div></div>';
+            }).join('') +
+            '</div></div></div>';
     }
 
     function register() {
@@ -777,6 +830,33 @@ object BuiltInModules {
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', register) : register();
 })();
 """
+
+    private const val FIND_IN_PAGE_PANEL_HTML = """<div class="wta-mod-panel wta-find-panel">
+<div class="wta-find-bar">
+<span class="wta-find-icon">🔎</span>
+<input id="wta-find-query" class="wta-find-input" placeholder="..." data-wta-action="findInput">
+<button class="wta-find-search-btn" data-wta-action="findSearch">⌕</button>
+</div>
+<div class="wta-find-nav">
+<div id="wta-find-status" class="wta-find-status"></div>
+<div class="wta-find-nav-btns">
+<button class="wta-find-nav-btn" data-wta-action="findPrev">↑</button>
+<button class="wta-find-nav-btn" data-wta-action="findNext">↓</button>
+<button class="wta-find-clear-btn" data-wta-action="findClear"></button>
+</div>
+</div>
+</div>"""
+
+    private const val FIND_IN_PAGE_CSS = """.wta-find-panel{display:flex;flex-direction:column;gap:12px;padding:4px}
+.wta-find-bar{display:flex;align-items:center;gap:8px;background:var(--wta-surface-dim,#f8fafc);border:1px solid var(--wta-outline,#e5e7eb);border-radius:12px;padding:8px 10px}
+.wta-find-icon{font-size:20px}
+.wta-find-input{flex:1;min-width:0;border:none;outline:none;background:transparent;color:var(--wta-on-surface,#111827);font-size:15px;line-height:24px}
+.wta-find-search-btn{background:none;border:none;font-size:18px;cursor:pointer;color:var(--wta-on-surface-variant,#6b7280);padding:4px}
+.wta-find-nav{display:flex;align-items:center;justify-content:space-between}
+.wta-find-status{font-size:13px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-find-nav-btns{display:flex;gap:6px}
+.wta-find-nav-btn,.wta-find-clear-btn{padding:6px 12px;border-radius:8px;border:1px solid var(--wta-outline,#e5e7eb);background:var(--wta-surface-dim,#f3f4f6);font-size:13px;cursor:pointer;color:var(--wta-on-surface,#374151);transition:all .2s}
+.wta-find-nav-btn:active,.wta-find-clear-btn:active{background:var(--wta-accent-soft,rgba(99,102,241,.1))}"""
 
     private const val FIND_IN_PAGE_CODE = """
 (function() {
@@ -890,51 +970,55 @@ object BuiltInModules {
             .replace('{1}', currentState.numberOfMatches);
     }
 
-    function getPanelHtml() {
-        const countColor = currentState.numberOfMatches ? '#2563eb' : '#9ca3af';
-        return '<div style="display:flex;flex-direction:column;gap:12px">' +
-            '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px">' +
-            '<span style="font-size:20px">🔎</span>' +
-            '<input id="wta-find-query" value="' + esc(currentQuery) + '" placeholder="' + esc(T.placeholder) + '" style="flex:1;min-width:0;border:none;outline:none;background:transparent;color:#111827;font-size:15px;line-height:24px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();window.__wtaFindInPageSearch()}">' +
-            '<button onclick="window.__wtaFindInPageSearch()" style="width:36px;height:36px;border:none;border-radius:9px;background:#2563eb;color:white;font-size:16px;cursor:pointer">⌕</button>' +
-            '</div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-            '<div id="wta-find-status" style="font-size:13px;color:' + countColor + ';font-weight:600;min-height:20px">' + esc(statusText()) + '</div>' +
-            '<div style="display:flex;gap:6px">' +
-            '<button onclick="window.__wtaFindInPagePrev()" style="width:38px;height:34px;border:none;border-radius:9px;background:#eef2ff;color:#3730a3;font-size:18px;cursor:pointer" title="' + esc(T.prev) + '">↑</button>' +
-            '<button onclick="window.__wtaFindInPageNext()" style="width:38px;height:34px;border:none;border-radius:9px;background:#eef2ff;color:#3730a3;font-size:18px;cursor:pointer" title="' + esc(T.next) + '">↓</button>' +
-            '<button onclick="window.__wtaFindInPageClear()" style="height:34px;border:none;border-radius:9px;background:#f3f4f6;color:#4b5563;padding:0 12px;font-size:13px;cursor:pointer">' + esc(T.clear) + '</button>' +
-            '</div></div>' +
-            '</div>';
+    function updatePanelUI() {
+        var status = document.getElementById('wta-find-status');
+        if (status) { status.textContent = statusText(); status.style.color = currentState.numberOfMatches ? 'var(--wta-primary,#2563eb)' : 'var(--wta-on-surface-variant,#9ca3af)'; }
+        var input = document.getElementById('wta-find-query');
+        if (input && !input.value && currentQuery) input.value = currentQuery;
+        var clearBtn = document.querySelector('.wta-find-clear-btn');
+        if (clearBtn) clearBtn.textContent = T.clear;
     }
 
     function refreshPanel() {
+        updatePanelUI();
         if (typeof __WTA_MODULE_UI__ !== 'undefined') {
-            __WTA_MODULE_UI__.updatePanel(MODULE.id, getPanelHtml());
             setTimeout(function() {
-                const input = document.getElementById('wta-find-query');
-                if (input) {
-                    input.focus();
-                    input.setSelectionRange(input.value.length, input.value.length);
-                }
+                var input = document.getElementById('wta-find-query');
+                if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
             }, 50);
         }
     }
 
+    window.__wta_module_action_findInput = function() {};
+    window.__wta_module_action_findSearch = doSearch;
+    window.__wta_module_action_findNext = function() { go(true); };
+    window.__wta_module_action_findPrev = function() { go(false); };
+    window.__wta_module_action_findClear = clearSearch;
     window.__wtaFindInPageNativeUpdate = setState;
-    window.__wtaFindInPageSearch = doSearch;
-    window.__wtaFindInPageNext = function() { go(true); };
-    window.__wtaFindInPagePrev = function() { go(false); };
-    window.__wtaFindInPageClear = clearSearch;
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }
-        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: c => { c.innerHTML = getPanelHtml(); setTimeout(function(){ const input = document.getElementById('wta-find-query'); if (input) input.focus(); }, 60); } });
+        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: function() { updatePanelUI(); setTimeout(function(){ var input = document.getElementById('wta-find-query'); if (input) input.focus(); }, 60); } });
     }
 
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', register) : register();
 })();
 """
+
+    private const val DARK_MODE_PANEL_HTML = """<div class="wta-mod-panel wta-dark-panel">
+<div class="wta-dark-icon" id="wta-dark-icon">☀️</div>
+<div class="wta-dark-status" id="wta-dark-status"></div>
+<div class="wta-mod-desc" id="wta-dark-desc"></div>
+<button class="wta-mod-btn" data-wta-action="toggleDark" id="wta-dark-btn"></button>
+</div>"""
+
+    private const val DARK_MODE_CSS = """.wta-dark-panel{text-align:center;padding:20px}
+.wta-dark-icon{font-size:64px;margin-bottom:20px}
+.wta-dark-status{font-size:18px;font-weight:600;color:var(--wta-on-surface,#1f2937);margin-bottom:8px}
+.wta-dark-panel .wta-mod-desc{font-size:13px;color:var(--wta-on-surface-variant,#9ca3af);margin-bottom:24px}
+.wta-mod-btn{width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s}
+.wta-mod-btn-primary{background:linear-gradient(135deg,var(--wta-primary,#6366f1),#8b5cf6);color:var(--wta-on-primary,#fff)}
+.wta-mod-btn-secondary{background:var(--wta-surface-dim,#f3f4f6);color:var(--wta-on-surface,#374151)}"""
 
     private const val DARK_MODE_CODE = """
 (function() {
@@ -998,21 +1082,25 @@ object BuiltInModules {
         }
     }
 
-    function getPanelHtml() {
-        return '<div style="text-align:center;padding:20px">' +
-            '<div style="font-size:64px;margin-bottom:20px">' + (enabled ? '🌙' : '☀️') + '</div>' +
-            '<div style="font-size:18px;font-weight:600;color:#1f2937;margin-bottom:8px">' + (enabled ? T.statusOn : T.statusOff) + '</div>' +
-            '<div style="font-size:13px;color:#9ca3af;margin-bottom:24px">' + T.desc + '</div>' +
-            '<button onclick="__wtaToggleDark()" style="width:100%;padding:14px;border-radius:12px;border:none;font-size:15px;font-weight:500;cursor:pointer;' +
-            (enabled ? 'background:#f3f4f6;color:#374151' : 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white') + '">' +
-            (enabled ? '☀️ ' + T.turnOff : '🌙 ' + T.turnOn) + '</button></div>';
+    function updatePanelUI() {
+        var icon = document.getElementById('wta-dark-icon');
+        var status = document.getElementById('wta-dark-status');
+        var desc = document.getElementById('wta-dark-desc');
+        var btn = document.getElementById('wta-dark-btn');
+        if (icon) icon.textContent = enabled ? '🌙' : '☀️';
+        if (status) status.textContent = enabled ? T.statusOn : T.statusOff;
+        if (desc) desc.textContent = T.desc;
+        if (btn) {
+            btn.textContent = enabled ? ('☀️ ' + T.turnOff) : ('🌙 ' + T.turnOn);
+            btn.className = 'wta-mod-btn ' + (enabled ? 'wta-mod-btn-secondary' : 'wta-mod-btn-primary');
+        }
     }
 
-    window.__wtaToggleDark = function() { toggle(); if (typeof __WTA_MODULE_UI__ !== 'undefined') __WTA_MODULE_UI__.updatePanel(MODULE.id, getPanelHtml()); };
+    window.__wta_module_action_toggleDark = function() { toggle(); updatePanelUI(); };
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }
-        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: c => c.innerHTML = getPanelHtml() });
+        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: function() { updatePanelUI(); } });
     }
 
     apply();
@@ -1024,6 +1112,28 @@ object BuiltInModules {
     }
 })();
 """
+
+    private const val PRIVACY_PANEL_HTML = """<div class="wta-mod-panel wta-privacy-panel">
+<div class="wta-privacy-header"><div class="wta-privacy-icon">🛡️</div><div class="wta-mod-desc" id="wta-privacy-subtitle"></div></div>
+<div class="wta-privacy-item" data-wta-action="privacyToggle" data-wta-arg="tracking" id="wta-priv-tracking"><span class="wta-privacy-item-icon">🚫</span><div class="wta-privacy-item-text"><div class="wta-privacy-item-name" id="wta-priv-tracking-name"></div><div class="wta-privacy-item-desc" id="wta-priv-tracking-desc"></div></div><div class="wta-toggle"><div class="wta-toggle-track"></div><div class="wta-toggle-thumb"></div></div></div>
+<div class="wta-privacy-item" data-wta-action="privacyToggle" data-wta-arg="fingerprint" id="wta-priv-fingerprint"><span class="wta-privacy-item-icon">🎭</span><div class="wta-privacy-item-text"><div class="wta-privacy-item-name" id="wta-priv-fingerprint-name"></div><div class="wta-privacy-item-desc" id="wta-priv-fingerprint-desc"></div></div><div class="wta-toggle"><div class="wta-toggle-track"></div><div class="wta-toggle-thumb"></div></div></div>
+<div class="wta-privacy-item" data-wta-action="privacyToggle" data-wta-arg="cookies" id="wta-priv-cookies"><span class="wta-privacy-item-icon">🍪</span><div class="wta-privacy-item-text"><div class="wta-privacy-item-name" id="wta-priv-cookies-name"></div><div class="wta-privacy-item-desc" id="wta-priv-cookies-desc"></div></div><div class="wta-toggle"><div class="wta-toggle-track"></div><div class="wta-toggle-thumb"></div></div></div>
+</div>"""
+
+    private const val PRIVACY_CSS = """.wta-privacy-panel{padding:16px}
+.wta-privacy-header{text-align:center;margin-bottom:16px}
+.wta-privacy-icon{font-size:48px;margin-bottom:8px}
+.wta-privacy-item{display:flex;align-items:center;gap:12px;padding:16px;background:var(--wta-surface-dim,#f9fafb);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:background .2s}
+.wta-privacy-item:active{background:var(--wta-accent-soft,rgba(99,102,241,.06))}
+.wta-privacy-item-icon{font-size:24px}
+.wta-privacy-item-text{flex:1}
+.wta-privacy-item-name{font-weight:500;color:var(--wta-on-surface,#1f2937)}
+.wta-privacy-item-desc{font-size:12px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-toggle{position:relative;width:48px;height:28px;flex-shrink:0}
+.wta-toggle-track{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--wta-outline,#d1d5db);border-radius:14px;transition:.3s}
+.wta-toggle-thumb{position:absolute;height:24px;width:24px;left:2px;bottom:2px;background:white;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.wta-privacy-item[data-state="on"] .wta-toggle-track{background:#22c55e}
+.wta-privacy-item[data-state="on"] .wta-toggle-thumb{left:22px}"""
 
     private const val PRIVACY_PROTECTION_CODE = """
 (function() {
@@ -1061,39 +1171,51 @@ object BuiltInModules {
         }
     }
 
-    function getPanelHtml() {
-        const items = [
-            { key: 'tracking', icon: '🚫', name: T.tracking, desc: T.trackingDesc },
-            { key: 'fingerprint', icon: '🎭', name: T.fingerprint, desc: T.fingerprintDesc },
-            { key: 'cookies', icon: '🍪', name: T.cookies, desc: T.cookiesDesc }
-        ];
-
-        return '<div style="margin-bottom:16px;text-align:center"><div style="font-size:48px;margin-bottom:8px">🛡️</div><div style="font-size:13px;color:#9ca3af">' + T.subtitle + '</div></div>' +
-            items.map(item => '<div style="display:flex;align-items:center;gap:12px;padding:16px;background:#f9fafb;border-radius:12px;margin-bottom:8px">' +
-                '<span style="font-size:24px">' + item.icon + '</span>' +
-                '<div style="flex:1"><div style="font-weight:500;color:#1f2937">' + item.name + '</div><div style="font-size:12px;color:#9ca3af">' + item.desc + '</div></div>' +
-                '<label style="position:relative;width:48px;height:28px"><input type="checkbox" ' + (settings[item.key] ? 'checked' : '') + ' onchange="__wtaPrivacyToggle(\'' + item.key + '\')" style="opacity:0;width:0;height:0">' +
-                '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (settings[item.key] ? '#22c55e' : '#d1d5db') + ';border-radius:14px;transition:.3s"></span>' +
-                '<span style="position:absolute;height:24px;width:24px;left:' + (settings[item.key] ? '22px' : '2px') + ';bottom:2px;background:white;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span></label></div>'
-            ).join('');
+    function updatePanelUI() {
+        var sub = document.getElementById('wta-privacy-subtitle');
+        if (sub) sub.textContent = T.subtitle;
+        ['tracking', 'fingerprint', 'cookies'].forEach(function(key) {
+            var el = document.getElementById('wta-priv-' + key);
+            if (el) el.setAttribute('data-state', settings[key] ? 'on' : 'off');
+            var nameEl = document.getElementById('wta-priv-' + key + '-name');
+            if (nameEl) nameEl.textContent = T[key];
+            var descEl = document.getElementById('wta-priv-' + key + '-desc');
+            if (descEl) descEl.textContent = T[key + 'Desc'];
+        });
     }
 
-    window.__wtaPrivacyToggle = function(key) {
+    window.__wta_module_action_privacyToggle = function(key) {
         settings[key] = !settings[key];
         save();
-        __WTA_MODULE_UI__.toast(settings[key] ? T.enabled : T.disabled);
-        if (typeof __WTA_MODULE_UI__ !== 'undefined') __WTA_MODULE_UI__.updatePanel(MODULE.id, getPanelHtml());
+        if (typeof __WTA_MODULE_UI__ !== 'undefined') __WTA_MODULE_UI__.toast(settings[key] ? T.enabled : T.disabled);
+        updatePanelUI();
     };
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }
-        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: c => c.innerHTML = getPanelHtml() });
+        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: function() { updatePanelUI(); } });
     }
 
     applyProtection();
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', register) : register();
 })();
 """
+
+    private const val CONTENT_ENHANCER_PANEL_HTML = """<div class="wta-mod-panel">
+<div class="wta-tool-grid">
+<button class="wta-tool-btn" data-wta-action="enableCopy"><span class="wta-tool-icon">📋</span><span class="wta-tool-label" id="wta-tool-copy"></span></button>
+<button class="wta-tool-btn" data-wta-action="copyText"><span class="wta-tool-icon">📝</span><span class="wta-tool-label" id="wta-tool-text"></span></button>
+<button class="wta-tool-btn" data-wta-action="copyHtml"><span class="wta-tool-icon">📝</span><span class="wta-tool-label" id="wta-tool-html"></span></button>
+<button class="wta-tool-btn" data-wta-action="toTop"><span class="wta-tool-icon">⬆️</span><span class="wta-tool-label" id="wta-tool-top"></span></button>
+<button class="wta-tool-btn" data-wta-action="toBottom"><span class="wta-tool-icon">⬇️</span><span class="wta-tool-label" id="wta-tool-bottom"></span></button>
+</div>
+</div>"""
+
+    private const val CONTENT_ENHANCER_CSS = """.wta-tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px}
+.wta-tool-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border-radius:12px;border:1px solid var(--wta-outline,#e5e7eb);background:var(--wta-surface-dim,#f9fafb);cursor:pointer;color:var(--wta-on-surface,#374151);transition:all .2s}
+.wta-tool-btn:active{background:var(--wta-accent-soft,rgba(99,102,241,.1))}
+.wta-tool-icon{font-size:24px}
+.wta-tool-label{font-size:13px;font-weight:500}"""
 
     private const val CONTENT_ENHANCER_CODE = """
 (function() {
@@ -1136,35 +1258,45 @@ object BuiltInModules {
     function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); __WTA_MODULE_UI__.toast(T.atTop); }
     function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); __WTA_MODULE_UI__.toast(T.atBottom); }
 
-    function getPanelHtml() {
-        const tools = [
-            { icon: '📋', name: T.enableCopy, fn: '__wtaEnableCopy()' },
-            { icon: '📄', name: T.copyText, fn: '__wtaCopyText()' },
-            { icon: '🔤', name: T.copyHtml, fn: '__wtaCopyHtml()' },
-            { icon: '⬆️', name: T.toTop, fn: '__wtaScrollTop()' },
-            { icon: '⬇️', name: T.toBottom, fn: '__wtaScrollBottom()' }
-        ];
-
-        return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-            tools.map(t => '<button onclick="' + t.fn + '" style="padding:20px 12px;border-radius:12px;border:none;background:#f9fafb;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s">' +
-                '<span style="font-size:28px">' + t.icon + '</span>' +
-                '<span style="font-size:13px;color:#374151">' + t.name + '</span></button>'
-            ).join('') + '</div>';
+    function updatePanelUI() {
+        var ids = ['wta-tool-copy', 'wta-tool-text', 'wta-tool-html', 'wta-tool-top', 'wta-tool-bottom'];
+        var keys = ['enableCopy', 'copyText', 'copyHtml', 'toTop', 'toBottom'];
+        ids.forEach(function(id, i) { var el = document.getElementById(id); if (el) el.textContent = T[keys[i]]; });
     }
 
-    window.__wtaEnableCopy = enableCopy;
-    window.__wtaCopyText = copyPageText;
-    window.__wtaCopyHtml = copyPageHtml;
-    window.__wtaScrollTop = scrollToTop;
-    window.__wtaScrollBottom = scrollToBottom;
+    window.__wta_module_action_enableCopy = enableCopy;
+    window.__wta_module_action_copyText = copyPageText;
+    window.__wta_module_action_copyHtml = copyPageHtml;
+    window.__wta_module_action_toTop = scrollToTop;
+    window.__wta_module_action_toBottom = scrollToBottom;
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }
-        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: c => c.innerHTML = getPanelHtml() });
+        __WTA_MODULE_UI__.register({ ...MODULE, uiConfig: (typeof __MODULE_UI_CONFIG__ !== 'undefined' ? __MODULE_UI_CONFIG__ : undefined), runMode: (typeof __MODULE_RUN_MODE__ !== 'undefined' ? __MODULE_RUN_MODE__ : 'INTERACTIVE'), onAction: function() { updatePanelUI(); } });
     }
     document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', register) : register();
 })();
 """
+
+    private const val ELEMENT_BLOCKER_PANEL_HTML = """<div class="wta-mod-panel wta-blocker-panel">
+<button class="wta-blocker-select-btn" data-wta-action="enterSelectMode"><span>👆</span><span id="wta-blocker-select-label"></span></button>
+<div id="wta-blocker-list" class="wta-blocker-list"></div>
+<button class="wta-blocker-clear-btn" data-wta-action="clearAllBlocks" id="wta-blocker-clear"></button>
+</div>"""
+
+    private const val ELEMENT_BLOCKER_CSS = """.wta-blocker-panel{padding:4px}
+.wta-blocker-select-btn{width:100%;background:linear-gradient(135deg,#ef4444,#f87171);color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s}
+.wta-blocker-select-btn:active{opacity:.8}
+.wta-blocker-count{font-size:14px;color:var(--wta-on-surface-variant,#6b7280);margin:12px 0}
+.wta-blocker-list{max-height:200px;overflow-y:auto}
+.wta-blocker-item{display:flex;align-items:center;gap:8px;padding:10px;background:var(--wta-surface-dim,#f9fafb);border-radius:8px;margin-bottom:6px;font-size:13px;color:var(--wta-on-surface,#991b1b)}
+.wta-blocker-item-selector{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:12px}
+.wta-blocker-item-btn{background:#fee2e2;border:none;cursor:pointer;font-size:14px;color:#dc2626;padding:4px 8px;border-radius:4px;transition:all .2s}
+.wta-blocker-item-btn:active{background:#fecaca}
+.wta-blocker-clear-btn{width:100%;padding:12px;border-radius:10px;border:1px solid var(--wta-outline,#fecaca);background:var(--wta-surface-dim,#fff5f5);color:#dc2626;font-size:14px;cursor:pointer;transition:all .2s;margin-top:12px}
+.wta-blocker-clear-btn:active{background:#fef2f2}
+.wta-blocker-empty{text-align:center;padding:24px;color:var(--wta-on-surface-variant,#9ca3af)}
+.wta-blocker-empty-icon{font-size:32px;margin-bottom:8px}"""
 
     private const val ELEMENT_BLOCKER_CODE = """
 (function() {
@@ -1382,31 +1514,30 @@ object BuiltInModules {
     }
 
     function getPanelHtml() {
-        let html = '<div style="margin-bottom:20px">' +
-            '<button onclick="__wtaEnterSelectMode()" style="width:100%;background:linear-gradient(135deg,#ef4444,#f87171);color:white;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
-            '<span>👆</span> ' + T.selectElement + '</button></div>';
+        let html = '<div class="wta-blocker-panel">' +
+            '<button class="wta-blocker-select-btn" data-wta-action="enterSelectMode"><span>👆</span> ' + T.selectElement + '</button>';
 
-        html += '<div style="font-size:14px;color:#6b7280;margin-bottom:12px">' + T.blockedCount.replace('{0}', blockedSelectors.length) + '</div>';
+        html += '<div class="wta-blocker-count">' + T.blockedCount.replace('{0}', blockedSelectors.length) + '</div>';
 
         if (blockedSelectors.length) {
-            html += '<div style="max-height:200px;overflow-y:auto">';
-            blockedSelectors.forEach((selector, i) => {
-                html += '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#f9fafb;border-radius:8px;margin-bottom:8px">' +
-                    '<span style="flex:1;font-size:12px;color:#4b5563;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace">' + selector.replace(/</g, '&lt;') + '</span>' +
-                    '<button onclick="__wtaUnblock(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:4px 8px;border-radius:4px;font-size:12px;cursor:pointer">' + T.delete + '</button></div>';
+            html += '<div class="wta-blocker-list">';
+            blockedSelectors.forEach(function(selector, i) {
+                html += '<div class="wta-blocker-item">' +
+                    '<span class="wta-blocker-item-selector">' + selector.replace(/</g, '&lt;') + '</span>' +
+                    '<button class="wta-blocker-item-btn" data-wta-action="unblock" data-wta-arg="' + i + '">✕</button></div>';
             });
             html += '</div>';
-            html += '<button onclick="__wtaClearAllBlocks()" style="width:100%;margin-top:12px;background:#f3f4f6;color:#6b7280;border:none;padding:10px;border-radius:8px;font-size:13px;cursor:pointer">' + T.clearAll + '</button>';
+            html += '<button class="wta-blocker-clear-btn" data-wta-action="clearAllBlocks">' + T.clearAll + '</button>';
         } else {
-            html += '<div style="text-align:center;padding:24px;color:#9ca3af"><div style="font-size:32px;margin-bottom:8px">🎯</div><div style="font-size:13px">' + T.clickToSelect + '</div></div>';
+            html += '<div class="wta-blocker-empty"><div class="wta-blocker-empty-icon">🎯</div><div>' + T.clickToSelect + '</div></div>';
         }
 
-        return html;
+        return html + '</div>';
     }
 
-    window.__wtaEnterSelectMode = enterSelectMode;
-    window.__wtaUnblock = unblockElement;
-    window.__wtaClearAllBlocks = clearAll;
+    window.__wta_module_action_enterSelectMode = enterSelectMode;
+    window.__wta_module_action_unblock = function(i) { unblockElement(parseInt(i)); };
+    window.__wta_module_action_clearAllBlocks = clearAll;
 
     function register() {
         if (typeof __WTA_MODULE_UI__ === 'undefined') { setTimeout(register, 100); return; }

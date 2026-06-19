@@ -5258,6 +5258,11 @@ class WebViewManager(
                 } else ""
                 val matchesPage = module.matchesUrl(url)
                 val jsModuleId = module.id.replace("\\", "\\\\").replace("'", "\\'")
+                val jsPanelHtml = if (module.panelHtml.isNotBlank()) {
+                    "'" + module.panelHtml.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n") + "'"
+                } else {
+                    "_ex ? _ex.panelHtml : undefined"
+                }
 
                 regBuilder.appendLine("""
                     (function() {
@@ -5280,7 +5285,7 @@ class WebViewManager(
                                 runAt: '${module.runAt.name}',
                                 runMode: '${module.runMode.name}',
                                 onAction: _ex ? _ex.onAction : undefined,
-                                panelHtml: _ex ? _ex.panelHtml : undefined
+                                panelHtml: $jsPanelHtml
                             });
                         }
                         setTimeout(_reg, 50);
