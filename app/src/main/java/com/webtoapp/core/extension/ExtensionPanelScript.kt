@@ -1155,15 +1155,20 @@ object ExtensionPanelScript {
                 
                 // 边缘吸附
                 if (edgeSnapping) {
-                    const rect = element.getBoundingClientRect();
+                    const elemWidth = element.offsetWidth;
+                    const elemHeight = element.offsetHeight;
                     const winWidth = window.innerWidth;
                     const winHeight = window.innerHeight;
                     const threshold = 20;
                     
+                    // 左边缘吸附
                     if (newLeft < threshold) newLeft = 0;
+                    // 上边缘吸附
                     if (newTop < threshold) newTop = 0;
-                    if (newLeft + rect.width > winWidth - threshold) newLeft = winWidth - rect.width;
-                    if (newTop + rect.height > winHeight - threshold) newTop = winHeight - rect.height;
+                    // 右边缘吸附
+                    if (newLeft + elemWidth > winWidth - threshold) newLeft = winWidth - elemWidth;
+                    // 下边缘吸附
+                    if (newTop + elemHeight > winHeight - threshold) newTop = winHeight - elemHeight;
                 }
                 
                 element.style.left = newLeft + 'px';
