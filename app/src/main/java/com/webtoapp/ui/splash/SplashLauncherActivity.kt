@@ -127,7 +127,7 @@ fun SplashLauncherScreen(
 
     LaunchedEffect(Unit) {
         if (activationEnabled) {
-            if (activationRequireEveryTime) {
+            if (activationRequireEveryTime && !remoteConfig.enabled) {
                 activation.resetActivation(activationAppId)
                 isActivated = false
                 showActivationDialog = true
