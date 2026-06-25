@@ -2386,7 +2386,8 @@ fun WebViewScreen(
                                 htmlDir,
                                 enableCrossOriginIsolation = enableLocalIsolation
                             )
-                            val targetUrl = "$baseUrl/${Uri.encode(entryFile.removePrefix("/").ifBlank { "index.html" }, "/")}"
+                            val cacheBust = "_wta_v=" + projectId.takeIf { it.isNotBlank() }?.hashCode()
+                            val targetUrl = "$baseUrl/${Uri.encode(entryFile.removePrefix("/").ifBlank { "index.html" }, "/")}?$cacheBust"
                             AppLogger.d("WebViewActivity", "Target URL: $targetUrl, crossOriginIsolation=$enableLocalIsolation")
                             targetUrl to null
                         }
