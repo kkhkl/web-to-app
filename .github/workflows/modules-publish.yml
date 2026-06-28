@@ -27,7 +27,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 
 concurrency:
   group: modules-publish
@@ -66,7 +65,14 @@ jobs:
 
       - name: Open PR for regenerated submissions.json
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Prefer a PAT (secret PAT_TOKEN) when available: a GITHUB_TOKEN-
+          # pushed branch can't trigger other workflows (GitHub anti-loop), so
+          # the required "check" never reports on the resulting PR and it can't
+          # merge. A PAT-pushed branch triggers android-ci normally. Fall back to
+          # GITHUB_TOKEN so the workflow still runs without a PAT configured.
+          GH_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          GIT_AUTH_USER: x-access-token
+          GIT_AUTH_PWD: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           BRANCH: ci/regenerate-submissions
         run: |
           if git diff --quiet -- modules/submissions.json; then
@@ -83,7 +89,13 @@ jobs:
           git checkout -B "$BRANCH"
           git add modules/submissions.json
           git commit -m "chore(modules): regenerate submissions.json"
-          git push --force-with-lease origin "$BRANCH"
+
+          REPO="github.com/${GITHUB_REPOSITORY}"
+          if [ -n "${{ secrets.PAT_TOKEN }}" ]; then
+            git push --force-with-lease "https://${GIT_AUTH_USER}:${GIT_AUTH_PWD}@${REPO}" "$BRANCH"
+          else
+            git push --force-with-lease origin "$BRANCH"
+          fi
 
           # Reuse an existing open PR if one is already tracking this branch.
           PR_NUMBER=$(gh pr list --head "$BRANCH" --base main --state open \
@@ -99,23 +111,13 @@ jobs:
             gh pr edit "$PR_NUMBER" --title "$TITLE" --body "$BODY"
           fi
 
-          # The GITHUB_TOKEN-created PR can't trigger android-ci (GitHub's
-          # anti-loop on GITHUB_TOKEN-pushed events), so the required "check"
-          # status never reports and even --admin merge is rejected with
-          # "Required status check check is expected". submissions.json is a
-          # fully auto-generated diff of an already-validated catalog, so post a
-          # matching "check" run on the PR head to satisfy the branch rule, then
-          # merge with --admin (enforce_admins=false allows the bot to bypass).
-          PR_HEAD=$(gh pr view "$PR_NUMBER" --json headRefOid --jq '.headRefOid')
-          gh api "/repos/${GITHUB_REPOSITORY}/check-runs" \
-            --method POST \
-            -f name="check" \
-            -f head_sha="$PR_HEAD" \
-            -f status="completed" \
-            -f conclusion="success" \
-            -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            -f title="submissions.json regenerated — no build impact" >/dev/null
-
-          gh pr merge "$PR_NUMBER" --squash --admin --delete-branch \
-            || echo "::warning::Admin merge failed; PR #$PR_NUMBER left open for manual merge."
+          # When using a PAT, the branch push already triggered android-ci, so
+          # wait for its "check" to report then enable auto-merge (GitHub merges
+          # automatically once all required checks pass). With GITHUB_TOKEN there
+          # is no check to wait on, so the PR is left for a manual merge.
+          if [ -n "${{ secrets.PAT_TOKEN }}" ]; then
+            gh pr merge "$PR_NUMBER" --squash --auto --delete-branch \
+              || echo "::warning::Auto-merge setup failed; PR #$PR_NUMBER left open for manual merge."
+          else
+            echo "No PAT_TOKEN configured; PR #$PR_NUMBER left open for manual merge (GITHUB_TOKEN can't satisfy the required check)."
+          fi
