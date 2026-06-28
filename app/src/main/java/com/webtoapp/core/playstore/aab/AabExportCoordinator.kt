@@ -1,6 +1,8 @@
 package com.webtoapp.core.playstore.aab
 
 import android.content.Context
+import com.webtoapp.core.apkbuilder.ApkBuilder
+import com.webtoapp.core.apkbuilder.BuildResult
 import com.webtoapp.core.logging.AppLogger
 import com.webtoapp.core.playstore.aab.axml.ProtoManifestRewriter
 import com.webtoapp.data.model.AppType
@@ -9,6 +11,8 @@ import java.io.File
 
 class AabExportCoordinator(private val context: Context) {
 
+    private val apkBuilder: ApkBuilder by lazy { ApkBuilder(context.applicationContext) }
+
     private val builtApkDir: File
         get() = File(context.getExternalFilesDir(null), BUILT_APKS_DIR)
 
@@ -16,19 +20,23 @@ class AabExportCoordinator(private val context: Context) {
         get() = File(context.getExternalFilesDir(null), BUILT_AABS_DIR)
             .apply { if (!exists()) mkdirs() }
 
-    fun export(
+    suspend fun export(
         webApp: WebApp,
         onProgress: ((stage: AabExporter.Stage, percent: Int) -> Unit)? = null
     ): AabExporter.Result {
 
-        rejectIfRequiresProcessExec(webApp)
-
         val sourceApk = findMostRecentApkFor(webApp)
-            ?: throw NoBuiltApkException(
-                "No built APK found for '${webApp.name}'. " +
-                    "Please use the regular APK export flow first."
+        val apkToConvert = if (sourceApk != null) {
+            AppLogger.d(
+                TAG,
+                "Source APK: ${sourceApk.absolutePath} (${sourceApk.length() / 1024}KB)"
             )
-        AppLogger.d(TAG, "Source APK: ${sourceApk.absolutePath} (${sourceApk.length() / 1024}KB)")
+            sourceApk
+        } else {
+            AppLogger.d(TAG, "No built APK found, building one on demand for '${webApp.name}'")
+            onProgress?.invoke(AabExporter.Stage.BUILDING_APK, 0)
+            buildApkOnDemand(webApp, onProgress)
+        }
 
         val versionName = webApp.apkExportConfig?.customVersionName ?: "1.0"
         val safeName = sanitizeFileName(webApp.name)
@@ -36,7 +44,7 @@ class AabExportCoordinator(private val context: Context) {
         AppLogger.d(TAG, "Target AAB: ${outputAab.absolutePath}")
 
         return AabExporter(context).export(
-            sourceApk = sourceApk,
+            sourceApk = apkToConvert,
             outputAab = outputAab,
             targetSdkOverride = ProtoManifestRewriter.DEFAULT_PLAY_TARGET_SDK,
             onProgress = onProgress
@@ -68,13 +76,31 @@ class AabExportCoordinator(private val context: Context) {
         return name.replace(com.webtoapp.util.AppConstants.SANITIZE_FILENAME_REGEX, "_").take(50)
     }
 
-    private fun rejectIfRequiresProcessExec(webApp: WebApp) {
-        if (webApp.appType in PROCESS_EXEC_APP_TYPES) {
-            throw ServerRuntimeAppTypeException(
-                "App type ${webApp.appType} cannot be exported to AAB: it relies " +
-                    "on fork+exec of binaries inside the app's data directory, " +
-                    "which is blocked by SELinux on Android 10+. The AAB Play Store " +
-                    "ships will fail to launch on every modern device."
+    private suspend fun buildApkOnDemand(
+        webApp: WebApp,
+        onProgress: ((stage: AabExporter.Stage, percent: Int) -> Unit)?
+    ): File {
+        val result = try {
+            apkBuilder.buildApk(webApp) { percent, text ->
+                AppLogger.d(TAG, "Build APK progress: $percent% ($text)")
+                onProgress?.invoke(
+                    AabExporter.Stage.BUILDING_APK,
+                    (percent.coerceIn(0, 100) * BUILD_PROGRESS_WEIGHT / 100)
+                )
+            }
+        } catch (e: Exception) {
+            throw AabExportException(
+                failureStage = FailureStage.BUILD_APK,
+                message = "Failed to build APK on demand: ${e.message}",
+                cause = e
+            )
+        }
+        return when (result) {
+            is BuildResult.Success -> result.apkFile
+            is BuildResult.Error -> throw AabExportException(
+                failureStage = FailureStage.BUILD_APK,
+                message = "Failed to build APK on demand: ${result.message}",
+                cause = null
             )
         }
     }
@@ -86,6 +112,8 @@ class AabExportCoordinator(private val context: Context) {
 
         private const val BUILT_AABS_DIR = "built_aabs"
 
+        private const val BUILD_PROGRESS_WEIGHT = 45
+
         val PROCESS_EXEC_APP_TYPES: Set<AppType> = setOf(
             AppType.PHP_APP,
             AppType.NODEJS_APP,
@@ -95,7 +123,3 @@ class AabExportCoordinator(private val context: Context) {
         )
     }
 }
-
-class NoBuiltApkException(message: String) : Exception(message)
-
-class ServerRuntimeAppTypeException(message: String) : Exception(message)

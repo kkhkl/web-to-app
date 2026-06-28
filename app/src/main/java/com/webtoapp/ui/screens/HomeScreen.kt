@@ -135,6 +135,7 @@ fun HomeScreen(
     onOpenAbout: () -> Unit = {},
     onOpenMore: () -> Unit = {},
     onOpenPlayStore: () -> Unit = {},
+    onExportAabForApp: (Long) -> Unit = {},
 ) {
     val apps by viewModel.filteredSummaries.collectAsStateWithLifecycle()
     val allWebApps by viewModel.webApps.collectAsStateWithLifecycle()
@@ -937,6 +938,12 @@ fun HomeScreen(
                 scope.launch {
                     snackbarHostState.showSnackbar(message)
                 }
+            },
+            onExportAab = {
+                val appId = buildingApp?.id ?: return@BuildApkDialog
+                showBuildDialog = false
+                buildingApp = null
+                onExportAabForApp(appId)
             }
         )
     }
@@ -1781,7 +1788,8 @@ private fun BuildFailureReportDialog(
 fun BuildApkDialog(
     webApp: WebApp,
     onDismiss: () -> Unit,
-    onResult: (String) -> Unit
+    onResult: (String) -> Unit,
+    onExportAab: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -2213,8 +2221,20 @@ fun BuildApkDialog(
         },
         dismissButton = {
             if (!isBuilding) {
-                TextButton(onClick = onDismiss) {
-                    Text(if (analysisReport != null) Strings.close else Strings.btnCancel)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onExportAab) {
+                        Icon(
+                            Icons.Outlined.PlayCircleOutline,
+                            null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(Strings.playStoreExportAabButton)
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onDismiss) {
+                        Text(if (analysisReport != null) Strings.close else Strings.btnCancel)
+                    }
                 }
             }
         }

@@ -100,7 +100,12 @@ object Routes {
     const val PORT_MANAGER = "port_manager"
     const val STATS = "stats"
     const val ABOUT = "about"
-    const val PLAY_STORE = "play_store"
+    const val PLAY_STORE = "play_store?appId={appId}&autoStart={autoStart}"
+
+    fun playStore(appId: Long? = null, autoStart: Boolean = false): String {
+        val id = appId?.toString() ?: ""
+        return "play_store?appId=$id&autoStart=$autoStart"
+    }
 
     fun editApp(appId: Long) = "edit_app/$appId"
     fun editWebApp(appId: Long) = "edit_web_app/$appId"
@@ -192,7 +197,10 @@ fun AppNavigation() {
                         onOpenPortManager = { navController.navigate(Routes.PORT_MANAGER) },
                         onOpenStats = { navController.navigate(Routes.STATS) },
                         onOpenAbout = { navController.navigate(Routes.ABOUT) },
-                        onOpenPlayStore = { navController.navigate(Routes.PLAY_STORE) }
+                        onOpenPlayStore = { navController.navigate(Routes.playStore()) },
+                        onExportAabForApp = { appId ->
+                            navController.navigate(Routes.playStore(appId = appId, autoStart = true))
+                        }
                     )
             }
 
@@ -686,9 +694,28 @@ fun AppNavigation() {
                 PortManagerScreen(onBack = { navController.popBackStack() })
             }
 
-            composable(Routes.PLAY_STORE) {
+            composable(
+                route = Routes.PLAY_STORE,
+                arguments = listOf(
+                    navArgument("appId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = ""
+                    },
+                    navArgument("autoStart") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = "false"
+                    }
+                )
+            ) { backStackEntry ->
+                val rawAppId = backStackEntry.arguments?.getString("appId").orEmpty()
+                val initialAppId = rawAppId.toLongOrNull()
+                val autoStart = backStackEntry.arguments?.getString("autoStart")?.equals("true", ignoreCase = true) == true
                 PlayStoreScreen(
                     onBack = { navController.popBackStack() },
+                    initialAppId = initialAppId,
+                    autoStartExport = autoStart,
                     viewModel = viewModel
                 )
             }

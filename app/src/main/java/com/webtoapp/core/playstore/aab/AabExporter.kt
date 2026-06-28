@@ -12,6 +12,7 @@ class AabExporter(private val context: Context) {
 
     enum class Stage {
         STARTING,
+        BUILDING_APK,
         ASSEMBLING,
         ASSEMBLED,
         SIGNING,
@@ -89,6 +90,7 @@ class AabExporter(private val context: Context) {
 }
 
 enum class FailureStage {
+    BUILD_APK,
     ASSEMBLE,
     SIGN,
 

@@ -23,11 +23,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.PlayCircleOutline
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Policy
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -40,18 +41,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.webtoapp.core.i18n.Strings
 import com.webtoapp.core.playstore.PlayPolicyChecker
+import com.webtoapp.core.playstore.aab.AabExportException
+import com.webtoapp.core.playstore.aab.AabExporter
+import com.webtoapp.core.playstore.aab.AabExportCoordinator
+import com.webtoapp.core.playstore.aab.FailureStage
 import com.webtoapp.data.model.WebApp
 import com.webtoapp.ui.design.WtaButton
 import com.webtoapp.ui.design.WtaButtonVariant
@@ -59,12 +63,16 @@ import com.webtoapp.ui.design.WtaCard
 import com.webtoapp.ui.design.WtaCardTone
 import com.webtoapp.ui.design.WtaScreen
 import com.webtoapp.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun PlayStoreScreen(
     onBack: () -> Unit,
+    initialAppId: Long? = null,
+    autoStartExport: Boolean = false,
     viewModel: MainViewModel = koinViewModel()
 ) {
     val webApps by viewModel.webApps.collectAsStateWithLifecycle()
@@ -72,16 +80,21 @@ fun PlayStoreScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val coordinator = remember(context) {
-        com.webtoapp.core.playstore.aab.AabExportCoordinator(context.applicationContext)
+        AabExportCoordinator(context.applicationContext)
     }
 
-    var selectedAppId by remember { mutableStateOf<Long?>(null) }
+    var selectedAppId by remember { mutableStateOf(initialAppId) }
     var report by remember { mutableStateOf<PlayPolicyChecker.Report?>(null) }
     var exportState by remember { mutableStateOf<ExportState>(ExportState.Idle) }
+    var policyExpanded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(webApps) {
         if (selectedAppId == null && webApps.isNotEmpty()) {
-            selectedAppId = webApps.first().id
+            selectedAppId = if (initialAppId != null && webApps.any { it.id == initialAppId }) {
+                initialAppId
+            } else {
+                webApps.first().id
+            }
         }
 
         if (selectedAppId != null && webApps.none { it.id == selectedAppId }) {
@@ -91,6 +104,39 @@ fun PlayStoreScreen(
     }
 
     val selectedApp = webApps.firstOrNull { it.id == selectedAppId }
+
+    fun runExport(app: WebApp) {
+        if (exportState is ExportState.Running) return
+        exportState = ExportState.Running(AabExporter.Stage.STARTING, 0)
+        scope.launch {
+            exportState = withContext(Dispatchers.IO) {
+                try {
+                    val result = coordinator.export(app) { stage, pct ->
+                        exportState = ExportState.Running(stage, pct)
+                    }
+                    ExportState.Success(result.signedAab.absolutePath)
+                } catch (e: AabExportException) {
+                    ExportState.Failed(
+                        failureStage = e.failureStage,
+                        technicalDetails = e.message ?: e.javaClass.simpleName,
+                        throwable = e
+                    )
+                } catch (e: Exception) {
+                    ExportState.Failed(
+                        failureStage = FailureStage.UNKNOWN,
+                        technicalDetails = e.message ?: e.javaClass.simpleName,
+                        throwable = e
+                    )
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(autoStartExport, selectedApp?.id) {
+        if (autoStartExport && selectedApp != null && exportState is ExportState.Idle) {
+            runExport(selectedApp)
+        }
+    }
 
     WtaScreen(
         title = Strings.playStoreTitle,
@@ -111,50 +157,26 @@ fun PlayStoreScreen(
                     onSelectApp = { id ->
                         selectedAppId = id
                         report = null
+                        if (exportState !is ExportState.Running) {
+                            exportState = ExportState.Idle
+                        }
                     }
                 )
             }
 
             if (selectedApp != null) {
                 item {
-                    ActionButtonsRow(
-                        onScan = {
-                            report = PlayPolicyChecker.check(selectedApp)
+                    WtaButton(
+                        onClick = { runExport(selectedApp) },
+                        text = if (exportState is ExportState.Running) {
+                            Strings.playStoreExportRunning
+                        } else {
+                            Strings.playStoreExportAabButton
                         },
-                        onExportAab = {
-
-                            if (exportState !is ExportState.Running) {
-                                exportState = ExportState.Running(
-                                    stage = com.webtoapp.core.playstore.aab.AabExporter.Stage.STARTING,
-                                    percent = 0
-                                )
-                                scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                    exportState = try {
-                                        val result = coordinator.export(selectedApp) { stage, pct ->
-                                            exportState = ExportState.Running(stage, pct)
-                                        }
-                                        ExportState.Success(result.signedAab.absolutePath)
-                                    } catch (e: com.webtoapp.core.playstore.aab.NoBuiltApkException) {
-                                        ExportState.NeedsApk
-                                    } catch (e: com.webtoapp.core.playstore.aab.ServerRuntimeAppTypeException) {
-                                        ExportState.UnsupportedAppType
-                                    } catch (e: com.webtoapp.core.playstore.aab.AabExportException) {
-                                        ExportState.Failed(
-                                            failureStage = e.failureStage,
-                                            technicalDetails = e.message ?: e.javaClass.simpleName,
-                                            throwable = e
-                                        )
-                                    } catch (e: Exception) {
-                                        ExportState.Failed(
-                                            failureStage = com.webtoapp.core.playstore.aab.FailureStage.UNKNOWN,
-                                            technicalDetails = e.message ?: e.javaClass.simpleName,
-                                            throwable = e
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        exportState = exportState
+                        variant = WtaButtonVariant.Tonal,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = exportState !is ExportState.Running,
+                        leadingIcon = Icons.Outlined.PlayCircleOutline
                     )
                 }
 
@@ -168,30 +190,20 @@ fun PlayStoreScreen(
                         )
                     }
                 }
-            }
 
-            report?.let { rpt ->
-                if (rpt.appId == selectedApp?.id) {
-                    item {
-                        ReportSummaryCard(report = rpt)
-                    }
-                    items(rpt.violations) { violation ->
-                        ViolationCard(violation = violation)
-                    }
+                item {
+                    PolicyAdviceCard(
+                        expanded = policyExpanded,
+                        onToggle = {
+                            policyExpanded = !policyExpanded
+                            if (policyExpanded) {
+                                report = PlayPolicyChecker.check(selectedApp)
+                            }
+                        },
+                        report = report,
+                        webApp = selectedApp
+                    )
                 }
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                TutorialHeader()
-            }
-            items(tutorialSteps()) { step ->
-                TutorialStepCard(step = step)
-            }
-
-            item {
-                DisclaimerCard()
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -298,30 +310,66 @@ private fun AppRow(
 }
 
 @Composable
-private fun ActionButtonsRow(
-    onScan: () -> Unit,
-    onExportAab: () -> Unit,
-    exportState: ExportState
+private fun PolicyAdviceCard(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    report: PlayPolicyChecker.Report?,
+    webApp: WebApp
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        WtaButton(
-            onClick = onScan,
-            text = Strings.playStoreScanButton,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = Icons.Outlined.Search
-        )
+    WtaCard(tone = WtaCardTone.Surface) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Surface(
+                onClick = onToggle,
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Transparent
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Outlined.Policy,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = Strings.playStoreAdviceTitle,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = Strings.playStoreAdviceSubtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
 
-        WtaButton(
-            onClick = onExportAab,
-            text = if (exportState is ExportState.Running) {
-                Strings.playStoreExportRunning
-            } else {
-                Strings.playStoreExportAabButton
-            },
-            variant = WtaButtonVariant.Tonal,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = exportState !is ExportState.Running
-        )
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                val rpt = report ?: PlayPolicyChecker.check(webApp)
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ReportSummaryCard(report = rpt)
+                    rpt.violations.forEach { violation ->
+                        ViolationCard(violation = violation)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -527,111 +575,8 @@ private fun ViolationCard(violation: PlayPolicyChecker.Violation) {
     }
 }
 
-private data class TutorialStep(
-    val title: String,
-    val description: String,
-    val number: Int
-)
-
-private fun tutorialSteps(): List<TutorialStep> = listOf(
-    TutorialStep(Strings.playStoreTutorialStep1Title, Strings.playStoreTutorialStep1Desc, 1),
-    TutorialStep(Strings.playStoreTutorialStep2Title, Strings.playStoreTutorialStep2Desc, 2),
-    TutorialStep(Strings.playStoreTutorialStep3Title, Strings.playStoreTutorialStep3Desc, 3),
-    TutorialStep(Strings.playStoreTutorialStep4Title, Strings.playStoreTutorialStep4Desc, 4),
-    TutorialStep(Strings.playStoreTutorialStep5Title, Strings.playStoreTutorialStep5Desc, 5),
-    TutorialStep(Strings.playStoreTutorialStep6Title, Strings.playStoreTutorialStep6Desc, 6)
-)
-
-@Composable
-private fun TutorialHeader() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            Icons.Outlined.Description,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = Strings.playStoreTutorialTitle,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-}
-
-@Composable
-private fun TutorialStepCard(step: TutorialStep) {
-    WtaCard(tone = WtaCardTone.Surface) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-
-            Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = step.number.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = step.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = step.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontFamily = if (step.number == 4) FontFamily.Monospace else null
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DisclaimerCard() {
-    WtaCard(tone = WtaCardTone.Highlighted) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-            Icon(
-                Icons.Outlined.ErrorOutline,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = Strings.playStoreDisclaimerTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = Strings.playStoreDisclaimerBody,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
 private data class ReportSummary(
-    val icon: ImageVector,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val tone: WtaCardTone,
     val headlineColor: Color,
     val headline: String
@@ -641,21 +586,17 @@ internal sealed interface ExportState {
     data object Idle : ExportState
 
     data class Running(
-        val stage: com.webtoapp.core.playstore.aab.AabExporter.Stage,
+        val stage: AabExporter.Stage,
         val percent: Int
     ) : ExportState
 
     data class Success(val aabPath: String) : ExportState
 
     data class Failed(
-        val failureStage: com.webtoapp.core.playstore.aab.FailureStage,
+        val failureStage: FailureStage,
         val technicalDetails: String,
         val throwable: Throwable? = null
     ) : ExportState
-
-    data object NeedsApk : ExportState
-
-    data object UnsupportedAppType : ExportState
 }
 
 @Composable
@@ -804,61 +745,6 @@ private fun ExportStateCard(
                 }
             }
         }
-
-        is ExportState.NeedsApk -> {
-            WtaCard(tone = WtaCardTone.Highlighted) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Outlined.Info,
-                            contentDescription = null,
-                            tint = Color(0xFFE65100),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = Strings.playStoreExportNoApk,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = Strings.playStoreExportNoApkDesc,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        is ExportState.UnsupportedAppType -> {
-            WtaCard(tone = WtaCardTone.Critical) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Outlined.Block,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = Strings.playStoreExportUnsupportedTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = Strings.playStoreExportUnsupportedDesc,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -890,28 +776,32 @@ private fun shareAab(
     }
 }
 
-private fun stageLabel(stage: com.webtoapp.core.playstore.aab.AabExporter.Stage): String {
+private fun stageLabel(stage: AabExporter.Stage): String {
     return when (stage) {
-        com.webtoapp.core.playstore.aab.AabExporter.Stage.STARTING ->
+        AabExporter.Stage.STARTING ->
             Strings.playStoreExportStageStarting
-        com.webtoapp.core.playstore.aab.AabExporter.Stage.ASSEMBLING ->
+        AabExporter.Stage.BUILDING_APK ->
+            Strings.playStoreExportStageBuildingApk
+        AabExporter.Stage.ASSEMBLING ->
             Strings.playStoreExportStageAssembling
-        com.webtoapp.core.playstore.aab.AabExporter.Stage.ASSEMBLED ->
+        AabExporter.Stage.ASSEMBLED ->
             Strings.playStoreExportStageAssembled
-        com.webtoapp.core.playstore.aab.AabExporter.Stage.SIGNING ->
+        AabExporter.Stage.SIGNING ->
             Strings.playStoreExportStageSigning
-        com.webtoapp.core.playstore.aab.AabExporter.Stage.SIGNED ->
+        AabExporter.Stage.SIGNED ->
             Strings.playStoreExportStageSigned
     }
 }
 
-private fun failureStageLabel(stage: com.webtoapp.core.playstore.aab.FailureStage): String {
+private fun failureStageLabel(stage: FailureStage): String {
     return when (stage) {
-        com.webtoapp.core.playstore.aab.FailureStage.ASSEMBLE ->
+        FailureStage.BUILD_APK ->
+            Strings.playStoreExportFailureBuildApk
+        FailureStage.ASSEMBLE ->
             Strings.playStoreExportFailureAssemble
-        com.webtoapp.core.playstore.aab.FailureStage.SIGN ->
+        FailureStage.SIGN ->
             Strings.playStoreExportFailureSign
-        com.webtoapp.core.playstore.aab.FailureStage.UNKNOWN ->
+        FailureStage.UNKNOWN ->
             Strings.playStoreExportFailureUnknown
     }
 }
